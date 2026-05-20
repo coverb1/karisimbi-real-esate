@@ -132,9 +132,9 @@ export function PropertiesSection() {
         <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           {/* Left */}
           <div className="mb-8">
-            <h4 className="font-heading  font-black uppercase tracking-wide text-primary">
+            <h3 className="font-heading  font-black uppercase tracking-wide text-primary">
               Our Properties
-            </h4>
+            </h3>
             <p className="mt-1 text-gray-500">Discover Your Ideal Property</p>
           </div>
 

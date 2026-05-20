@@ -8,7 +8,7 @@ import Image from "next/image";
 
 const navItems = [
   { path: "/", label: "Home" },
-  { path: "/about", label: "About" },
+  { path: "/about-us", label: "About" },
   { path: "/properties", label: "Properties" },
   { path: "/services", label: "Services" },
 ];

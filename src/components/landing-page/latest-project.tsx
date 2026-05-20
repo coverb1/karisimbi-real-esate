@@ -36,9 +36,9 @@ export function LatestProjects() {
         {/* ── HEADER ── */}
         <div className="mb-10 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
           <div className="mb-8">
-            <h4 className="font-heading  font-black uppercase tracking-wide text-primary">
+            <h3 className="font-heading  font-black uppercase tracking-wide text-primary">
               Our Projects
-            </h4>
+            </h3>
             <p className="mt-1 text-gray-500">Our Latest Projects</p>
           </div>
 

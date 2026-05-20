@@ -89,9 +89,9 @@ export function StatsSection() {
       <AnimatedSection className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Section header */}
         <div className="mb-8">
-          <h4 className="font-heading  font-black uppercase tracking-wide text-primary">
+          <h3 className="font-heading  font-black uppercase tracking-wide text-primary">
             Achievements
-          </h4>
+          </h3>
           <p className="mt-1 text-gray-500">
             Our Track Record of Excellence
           </p>
