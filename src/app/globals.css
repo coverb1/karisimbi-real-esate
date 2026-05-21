@@ -151,6 +151,47 @@ body {
   font-weight: 700;
 }
 
+.admin-shell {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4,
+.admin-shell h5,
+.admin-shell h6 {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.admin-shell .landing-title-compact {
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  line-height: 1.2;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+.admin-shell .landing-card-title {
+  font-size: 0.875rem;
+  line-height: 1.35;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+.admin-shell .landing-body {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+.admin-shell .landing-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
 .drawer-scroll {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--color-primary) 36%, transparent) transparent;
