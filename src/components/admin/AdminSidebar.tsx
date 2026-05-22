@@ -25,7 +25,7 @@ const navItems = [
     label: "System",
     items: [
       { icon: Bell, label: "Notifications", href: "/admin/dashboard/Notification" },
-      { icon: Settings, label: "Settings", href: "/admin/settings" },
+      // { icon: Settings, label: "Settings", href: "/admin/settings" },
     ],
   },
   {

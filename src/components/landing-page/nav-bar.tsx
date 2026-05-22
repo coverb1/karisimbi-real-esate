@@ -42,7 +42,6 @@ export function Navigation() {
             href="/"
             className="flex items-center gap-3 no-underline group shrink-0 min-w-0"
           >
-            {/* Bare logo — no card, no ring, just the image */}
             <Image
               src="/logo-blak.png"
               alt="Karisimbi Real Estate"
@@ -52,7 +51,6 @@ export function Navigation() {
               priority
             />
 
-            {/* Wordmark */}
             <div className="flex flex-col leading-none">
               <span className="font-heading text-[18px] font-bold tracking-widest text-primary">
                 KARISIMBI
@@ -91,6 +89,18 @@ export function Navigation() {
           {/* ── DESKTOP CTAs ── */}
           <div className="hidden md:flex items-center gap-2.5 shrink-0">
             <Link
+              href="/login"
+              className="inline-flex items-center justify-center h-10 px-4 sm:px-5 rounded-full
+                         border border-black/15 bg-transparent
+                         text-[11px] font-semibold uppercase tracking-widest text-black/60
+                         transition-all duration-200
+                         hover:border-primary/40 hover:text-primary hover:bg-primary/5
+                         no-underline"
+            >
+              Login
+            </Link>
+
+            <Link
               href="/book-visit"
               className="inline-flex items-center justify-center h-10 px-4 sm:px-5 rounded-full
                          border border-black/15 bg-transparent
@@ -125,11 +135,7 @@ export function Navigation() {
                        md:hidden"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? (
-              <X size={18} strokeWidth={2} />
-            ) : (
-              <Menu size={18} strokeWidth={2} />
-            )}
+            {mobileMenuOpen ? <X size={18} strokeWidth={2} /> : <Menu size={18} strokeWidth={2} />}
           </button>
         </div>
       </div>
@@ -157,15 +163,23 @@ export function Navigation() {
                       : "text-black/50 hover:text-black/80 hover:bg-black/4",
                   ].join(" ")}
                 >
-                  {isActive && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                  )}
+                  {isActive && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
                   {item.label}
                 </Link>
               );
             })}
 
             <div className="mt-4 flex flex-col gap-2.5 border-t border-black/6 pt-5">
+              <Link
+                href="/app/login"
+                className="flex h-12 items-center justify-center rounded-full
+                           border border-black/12 text-[11px] font-semibold uppercase
+                           tracking-widest text-black/60 no-underline
+                           transition-all duration-200 hover:border-primary/40 hover:text-primary"
+              >
+                Login
+              </Link>
+
               <Link
                 href="/book-visit"
                 className="flex h-12 items-center justify-center rounded-full

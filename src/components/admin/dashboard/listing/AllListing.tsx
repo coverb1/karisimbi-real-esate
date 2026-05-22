@@ -295,7 +295,7 @@ export default function AllListingsPage() {
         </div>
 
         <Link
-          href="/admin/listings/new"
+          href="/admin/dashboard/Addproperty"
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
         >
           <IconPlus />
