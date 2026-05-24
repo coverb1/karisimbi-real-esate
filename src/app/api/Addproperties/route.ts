@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServiceRoleClient } from "@/src/lib/supabase-server";
 import { requireAdminUser } from "@/src/lib/auth/session";
+import { serializePropertyImages } from "@/src/lib/property-images";
 import type { Database } from "@/src/types/database";
 
 type PropertyInsert = Database["public"]["Tables"]["properties"]["Insert"];
@@ -13,8 +14,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
-  // Only the columns that exist in your database
-  const { title, location, type, price, bedrooms, bathrooms, area, image_url, status } = body;
+  const { title, location, type, price, bedrooms, bathrooms, area, image_url, image_urls, status } = body;
 
   if (!title || !location || !type || !price || !bedrooms || !bathrooms || !area) {
     return NextResponse.json(
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     bedrooms: Number(bedrooms),
     bathrooms: Number(bathrooms),
     area: Number(area),
-    image_url: image_url || null,
+    image_url: Array.isArray(image_urls) ? serializePropertyImages(image_urls) : image_url || null,
   };
 
   const { data, error } = await supabase

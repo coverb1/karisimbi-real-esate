@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Database } from "@/src/types/database";
+import { getPrimaryPropertyImage } from "@/src/lib/property-images";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -301,7 +302,7 @@ function EditModal({
     bathrooms: String(listing.bathrooms),
     area:      String(listing.area),
     status:    listing.status,
-    image_url: listing.image_url ?? "",
+    image_url: getPrimaryPropertyImage(listing.image_url) ?? "",
   });
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -684,15 +685,18 @@ export default function AllListingsPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((l) => (
+                filtered.map((l) => {
+                  const coverImage = getPrimaryPropertyImage(l.image_url);
+
+                  return (
                   <tr key={l.id} className="transition-colors hover:bg-gray-50/50">
 
                     {/* Property */}
                     <td className="whitespace-nowrap px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                          {l.image_url ? (
-                            <Image src={l.image_url} alt={l.title} fill className="object-cover" />
+                          {coverImage ? (
+                            <Image src={coverImage} alt={l.title} fill className="object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -745,7 +749,8 @@ export default function AllListingsPage() {
                     </td>
 
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

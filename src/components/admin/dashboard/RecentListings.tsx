@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getSupabaseServiceRoleClient } from "@/src/lib/supabase-server";
+import { getPrimaryPropertyImage } from "@/src/lib/property-images";
 
 const statusColor: Record<string, string> = {
   Featured: "bg-emerald-50 text-emerald-700",
@@ -67,7 +68,10 @@ export async function RecentListings() {
           </div>
         )}
 
-        {listings.map((l) => (
+        {listings.map((l) => {
+          const coverImage = getPrimaryPropertyImage(l.image_url);
+
+          return (
           <div
             key={l.id}
             className="grid grid-cols-1 gap-3 px-4 py-3 transition-colors hover:bg-gray-50/50 sm:grid-cols-[2fr_1fr_1fr_1fr] sm:items-center sm:gap-4 sm:px-5"
@@ -75,9 +79,9 @@ export async function RecentListings() {
             <div className="flex items-center gap-3 min-w-0">
               {/* Show the real image from Cloudinary, or a grey placeholder if none */}
               <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                {l.image_url ? (
+                {coverImage ? (
                   <Image
-                    src={l.image_url}
+                    src={coverImage}
                     alt={l.title}
                     fill
                     className="object-cover"
@@ -106,7 +110,8 @@ export async function RecentListings() {
               {l.status}
             </span>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
