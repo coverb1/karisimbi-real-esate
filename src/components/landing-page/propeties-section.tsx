@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Bed, Bath, Square, ArrowUpRight } from "lucide-react";
 import { AnimatedSection } from "../animations/AnimatedSection";
+import { getPrimaryPropertyImage } from "@/src/lib/property-images";
 
 const categories = [
   "All",
@@ -15,152 +16,138 @@ const categories = [
   "Penthouse",
 ];
 
-const properties = [
-  {
-    id: 1,
-    category: "Villa",
-    title: "Modern Luxury Villa",
-    location: "Kigali Heights",
-    beds: 4,
-    baths: 3,
-    sqft: 3500,
-    price: "RWF 450,000,000",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
-  },
-  {
-    id: 2,
-    category: "Family House",
-    title: "Contemporary Family Home",
-    location: "Nyarutarama",
-    beds: 5,
-    baths: 4,
-    sqft: 4200,
-    price: "RWF 320,000,000",
-    image: "https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?w=800",
-  },
-  {
-    id: 3,
-    category: "Penthouse",
-    title: "Executive Penthouse",
-    location: "Gacuriro",
-    beds: 3,
-    baths: 2,
-    sqft: 2800,
-    price: "RWF 280,000,000",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
-  },
-  {
-    id: 4,
-    category: "Houses",
-    title: "Garden View Residence",
-    location: "Kimihurura",
-    beds: 4,
-    baths: 3,
-    sqft: 3100,
-    price: "RWF 210,000,000",
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800",
-  },
-  {
-    id: 5,
-    category: "Villa",
-    title: "Hillside Luxury Villa",
-    location: "Rebero",
-    beds: 6,
-    baths: 5,
-    sqft: 5200,
-    price: "RWF 580,000,000",
-    image: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800",
-  },
-  {
-    id: 6,
-    category: "Plots",
-    title: "Prime Land Plot",
-    location: "Kanombe",
-    beds: 0,
-    baths: 0,
-    sqft: 8000,
-    price: "RWF 95,000,000",
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800",
-  },
-  {
-    id: 7,
-    category: "Houses",
-    title: "Modern Family House",
-    location: "Kacyiru",
-    beds: 3,
-    baths: 2,
-    sqft: 2400,
-    price: "RWF 175,000,000",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
-  },
-  {
-    id: 8,
-    category: "Penthouse",
-    title: "Sky Loft Penthouse",
-    location: "Nyarugenge",
-    beds: 4,
-    baths: 3,
-    sqft: 3600,
-    price: "RWF 395,000,000",
-    image: "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800",
-  },
-  {
-    id: 9,
-    category: "Family House",
-    title: "Serene Valley Home",
-    location: "Bugesera",
-    beds: 5,
-    baths: 3,
-    sqft: 3900,
-    price: "RWF 240,000,000",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
-  },
-];
+type Property = {
+  id: string;
+  title: string;
+  location: string;
+  type: string;
+  price: number;
+  status: string;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  image_url: string | null;
+  created_at: string;
+};
 
+// ─── Skeleton ─────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="h-55 w-full animate-pulse bg-gray-100" />
+      <div className="flex flex-col gap-3 p-5">
+        <div className="h-4 w-3/4 animate-pulse rounded-lg bg-gray-100" />
+        <div className="h-3 w-1/2 animate-pulse rounded-lg bg-gray-100" />
+        <div className="mt-2 flex gap-4">
+          <div className="h-3 w-12 animate-pulse rounded-lg bg-gray-100" />
+          <div className="h-3 w-12 animate-pulse rounded-lg bg-gray-100" />
+          <div className="h-3 w-16 animate-pulse rounded-lg bg-gray-100" />
+        </div>
+        <div className="mt-4 h-px w-full bg-gray-100" />
+        <div className="h-5 w-1/3 animate-pulse rounded-lg bg-gray-100" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ─────────────────────────────────────
+function EmptyState({ type }: { type: string }) {
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center gap-3 py-20 text-center">
+      <p className="text-sm font-semibold text-gray-700">
+        No {type === "All" ? "" : type} properties yet
+      </p>
+      <p className="text-xs text-gray-400">
+        Check back soon — new listings are added regularly.
+      </p>
+    </div>
+  );
+}
+
+// ─── Error state ─────────────────────────────────────
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center gap-3 py-20 text-center">
+      <p className="text-sm font-semibold text-gray-700">
+        Failed to load properties
+      </p>
+      <button
+        onClick={onRetry}
+        className="rounded-full border border-gray-200 px-4 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
+// ─── MAIN ─────────────────────────────────────────────
 export function PropertiesSection() {
   const [active, setActive] = useState("All");
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const filtered =
-    active === "All"
-      ? properties
-      : properties.filter((p) => p.category === active);
+  async function fetchProperties(type: string) {
+    setLoading(true);
+    setError(false);
+
+    try {
+      const params = type !== "All" ? `?type=${encodeURIComponent(type)}` : "";
+      const res = await fetch(`/api/user/properties/get${params}`);
+
+      if (!res.ok) throw new Error("Failed");
+
+      const data = await res.json();
+      setProperties(data.properties ?? []);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchProperties(active);
+  }, [active]);
 
   return (
     <section className="bg-white py-16 px-8 lg:px-12">
       <AnimatedSection className="mx-auto max-w-300">
-        {/* ── HEADER ROW ── */}
+
+        {/* HEADER */}
         <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          {/* Left */}
-          <div className="mb-8">
-            <h3 className="font-heading  font-black uppercase tracking-wide text-primary">
+          <div>
+            <h3 className="text-primary font-semibold uppercase tracking-wide text-sm">
               Our Properties
             </h3>
-            <p className="mt-1 text-gray-500">Discover Your Ideal Property</p>
+            <p className="mt-1 text-gray-500 text-sm">
+              Discover Your Ideal Property
+            </p>
           </div>
 
-          {/* Right */}
+          {/* RED LINK ADDED (same style as your app, not big text) */}
           <Link
             href="/properties"
-            className="inline-flex items-center gap-1.5 self-start lg:self-end
-                       text-[13px] font-semibold text-primary no-underline
-                       border-b border-primary/40 pb-0.5
-                       transition-all duration-200 hover:border-primary whitespace-nowrap"
+            className="text-red-500 text-sm font-medium border-b border-red-300 hover:border-red-500"
           >
-            See All Properties <ArrowUpRight size={14} strokeWidth={2.5} />
+            All Properties
           </Link>
         </div>
 
-        {/* ── FILTER TABS ── */}
+        {/* FILTERS */}
         <div className="mb-10 flex flex-wrap gap-2">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActive(cat)}
+              disabled={loading}
               className={[
-                "rounded-full px-5 h-9 text-[13px] font-medium border transition-all duration-200",
+                "rounded-full px-5 h-9 text-[13px] font-medium border",
                 active === cat
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-primary/40 hover:text-primary",
+                  : "bg-white text-gray-600 border-gray-200",
+                loading ? "opacity-60 pointer-events-none" : "",
               ].join(" ")}
             >
               {cat}
@@ -168,81 +155,70 @@ export function PropertiesSection() {
           ))}
         </div>
 
-        {/* ── PROPERTY GRID ── */}
+        {/* GRID */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((property) => (
-            <Link
-              key={property.id}
-              href={`/properties/${property.id}`}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white
-                         no-underline shadow-sm transition-all duration-300
-                         hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.10)]"
-            >
-              {/* Image */}
-              <div className="relative h-55 w-full overflow-hidden">
-                <Image
-                  src={property.image}
-                  alt={property.title}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                {/* Category badge */}
-                <div className="absolute left-3 top-3">
-                  <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-800 backdrop-blur-sm">
-                    {property.category}
-                  </span>
-                </div>
-                {/* Arrow button */}
-                <div className="absolute right-3 top-3">
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white
-                                  transition-transform duration-200 group-hover:scale-110"
-                  >
-                    <ArrowUpRight size={16} strokeWidth={2.5} />
+
+          {loading &&
+            Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+
+          {!loading && error && (
+            <ErrorState onRetry={() => fetchProperties(active)} />
+          )}
+
+          {!loading && !error && properties.length === 0 && (
+            <EmptyState type={active} />
+          )}
+
+          {!loading &&
+            !error &&
+            properties.map((property) => {
+              const coverImage = getPrimaryPropertyImage(property.image_url);
+
+              return (
+                <Link
+                  key={property.id}
+                  href={`/properties/${property.id}`}
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white"
+                >
+                  <div className="relative h-55 w-full bg-gray-50">
+                    {coverImage ? (
+                      <Image
+                        src={coverImage}
+                        alt={property.title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : null}
+
+                    <div className="absolute left-3 top-3">
+                      <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-bold">
+                        {property.type}
+                      </span>
+                    </div>
+
+                    <div className="absolute right-3 top-3">
+                      <ArrowUpRight size={16} />
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Details */}
-              <div className="flex flex-col flex-1 p-5">
-                <h4 className="mb-1.5 font-bold text-gray-900 truncate">
-                  {property.title}
-                </h4>
+                  <div className="p-5">
+                    <h4 className="text-sm font-bold text-gray-900 truncate">
+                      {property.title}
+                    </h4>
 
-                <div className="mb-4 flex items-center gap-1.5 text-[13px] text-gray-400">
-                  <MapPin size={13} strokeWidth={2} className="text-primary" />
-                  {property.location}
-                </div>
+                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                      <MapPin size={12} /> {property.location}
+                    </p>
 
-                {/* Specs */}
-                {property.beds > 0 && (
-                  <div className="mb-5 flex items-center gap-4 text-[12.5px] text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <Bed size={13} strokeWidth={1.8} /> {property.beds} Beds
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Bath size={13} strokeWidth={1.8} /> {property.baths}{" "}
-                      Baths
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Square size={13} strokeWidth={1.8} />{" "}
-                      {property.sqft.toLocaleString()} sqft
-                    </span>
+                    <p className="mt-4 text-primary font-semibold text-sm">
+                      RWF {property.price.toLocaleString()}
+                    </p>
                   </div>
-                )}
-
-                {/* Price row */}
-                <div className="mt-auto flex items-end justify-between border-t border-gray-100 pt-4">
-                  <p className="m-0 font-heading text-[17px] font-bold text-primary">
-                    {property.price}
-                  </p>
-                  <p className="m-0 text-[11px] text-gray-400">
-                    Incl. taxes & fees
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
+                </Link>
+              );
+            })}
         </div>
       </AnimatedSection>
     </section>

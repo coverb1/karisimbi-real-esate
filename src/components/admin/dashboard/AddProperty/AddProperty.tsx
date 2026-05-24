@@ -176,7 +176,7 @@ function ImageDropzone({
           "border-gray-200 bg-gray-50/60 hover:border-primary/40 hover:bg-primary/[0.02]"
         }`}
       >
-        <input ref={inputRef} type="file" accept="image/*" className="hidden"
+        <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
           onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)} />
 
         <div className="relative flex h-20 w-20 items-center justify-center">
@@ -191,7 +191,7 @@ function ImageDropzone({
         </div>
 
         <div className="text-center">
-          <p className={`text-sm font-semibold ${imageError ? "text-red-500" : "text-gray-700"}`}>Drop a property photo here</p>
+          <p className={`text-sm font-semibold ${imageError ? "text-red-500" : "text-gray-700"}`}>Drop property photos here</p>
           <p className="mt-1 text-xs text-gray-400">or <span className="text-primary underline underline-offset-2">browse files</span> · PNG, JPG, WEBP up to 10MB</p>
         </div>
 
@@ -205,20 +205,38 @@ function ImageDropzone({
       {imageError && <FieldError message={imageError} />}
 
       {previews.length > 0 && (
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl border-2 border-primary shadow-md shadow-primary/20">
-          <Image src={previews[0]} alt="Property cover photo" fill className="object-cover" />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-primary px-2 py-1">
-            <IconStar />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-white">Cover Photo</span>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(0); }}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {previews.map((preview, index) => (
+            <div
+              key={preview}
+              className={`relative aspect-video w-full overflow-hidden rounded-xl border shadow-sm ${
+                index === primaryIdx ? "border-2 border-primary shadow-primary/20" : "border-gray-200"
+              }`}
+            >
+              <Image src={preview} alt={`Property photo ${index + 1}`} fill className="object-cover" />
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSetPrimary(index); }}
+                className={`absolute bottom-2 left-2 flex items-center gap-1 rounded-full px-2 py-1 ${
+                  index === primaryIdx ? "bg-primary text-white" : "bg-white/90 text-gray-700"
+                }`}
+              >
+                <IconStar />
+                <span className="text-[9px] font-bold uppercase tracking-wider">
+                  {index === primaryIdx ? "Cover Photo" : "Set Cover"}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRemove(index); }}
+                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -230,8 +248,8 @@ function ImageDropzone({
 export default function AddPropertyPage() {
   const [step, setStep] = useState(0);
 
-  // Only one image needed — matches the single image_url column in the DB
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  // The first image in this list is the cover image.
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
 
   const [imageError, setImageError] = useState<string | undefined>();
@@ -260,8 +278,8 @@ export default function AddPropertyPage() {
   }
 
   async function handleSubmit() {
-    if (!imageFile) {
-      setImageError("Please upload a cover photo");
+    if (imageFiles.length === 0) {
+      setImageError("Please upload at least one property photo");
       return;
     }
     setImageError(undefined);
@@ -269,13 +287,13 @@ export default function AddPropertyPage() {
     setSubmitting(true);
 
     try {
-      // Step 1: Convert image to base64 and upload to Cloudinary
-      const base64 = await fileToBase64(imageFile);
+      // Step 1: Convert images to base64 and upload to Cloudinary
+      const base64Images = await Promise.all(imageFiles.map(fileToBase64));
 
       const uploadRes = await fetch("/api/uploadToCloudinary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images: [base64] }),
+        body: JSON.stringify({ images: base64Images }),
       });
 
       if (!uploadRes.ok) {
@@ -283,7 +301,8 @@ export default function AddPropertyPage() {
         throw new Error(err.message || "Image upload failed");
       }
 
-      const { mainImageUrl } = await uploadRes.json();
+      const { mainImageUrl, imageUrls } = await uploadRes.json();
+      const uploadedImageUrls = Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls : [mainImageUrl].filter(Boolean);
 
       // Step 2: Save to database — only the columns in your DB blueprint
       const values = getValues();
@@ -300,7 +319,8 @@ export default function AddPropertyPage() {
           bedrooms:  parseInt(values.bedrooms, 10),
           bathrooms: parseInt(values.bathrooms, 10),
           area:      parseInt(values.area, 10),
-          image_url: mainImageUrl,
+          image_url: uploadedImageUrls[0],
+          image_urls: uploadedImageUrls,
         }),
       });
 
@@ -319,17 +339,36 @@ export default function AddPropertyPage() {
 
   function handleAddImage(files: File[]) {
     if (files.length === 0) return;
-    const file = files[0]; // Only one image — matches single image_url column
-    if (imagePreview[0]) URL.revokeObjectURL(imagePreview[0]);
-    setImageFile(file);
-    setImagePreview([URL.createObjectURL(file)]);
+    setImageFiles((current) => [...current, ...files]);
+    setImagePreview((current) => [...current, ...files.map((file) => URL.createObjectURL(file))]);
     setImageError(undefined);
   }
 
-  function handleRemoveImage() {
-    if (imagePreview[0]) URL.revokeObjectURL(imagePreview[0]);
-    setImageFile(null);
-    setImagePreview([]);
+  function handleRemoveImage(index?: number) {
+    if (typeof index !== "number") {
+      imagePreview.forEach((preview) => URL.revokeObjectURL(preview));
+      setImageFiles([]);
+      setImagePreview([]);
+      return;
+    }
+
+    if (imagePreview[index]) URL.revokeObjectURL(imagePreview[index]);
+    setImageFiles((current) => current.filter((_, i) => i !== index));
+    setImagePreview((current) => current.filter((_, i) => i !== index));
+  }
+
+  function handleSetPrimary(index: number) {
+    if (index === 0) return;
+    setImageFiles((current) => {
+      const next = [...current];
+      const [selected] = next.splice(index, 1);
+      return selected ? [selected, ...next] : current;
+    });
+    setImagePreview((current) => {
+      const next = [...current];
+      const [selected] = next.splice(index, 1);
+      return selected ? [selected, ...next] : current;
+    });
   }
 
   const values = getValues();
@@ -344,7 +383,7 @@ export default function AddPropertyPage() {
     { label: "Bedrooms", done: !!values.bedrooms },
     { label: "Bathrooms", done: !!values.bathrooms },
     { label: "Area (m²)", done: !!values.area },
-    { label: "Cover photo", done: !!imageFile },
+    { label: "Property photos", done: imageFiles.length > 0 },
   ];
 
   const allDone = checklist.every((c) => c.done);
@@ -403,7 +442,7 @@ export default function AddPropertyPage() {
           <p className="landing-body mt-1 text-gray-500">
             {step === 0 && "Enter the property identity, location and price."}
             {step === 1 && "Enter the number of rooms and total area."}
-            {step === 2 && "Upload a cover photo then publish."}
+            {step === 2 && "Upload property photos then publish."}
           </p>
         </div>
 
@@ -539,13 +578,13 @@ export default function AddPropertyPage() {
         {step === 2 && (
           <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
             <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Cover Photo</p>
-              <p className="text-xs text-gray-400">Upload one photo — it will be the cover image shown on all property cards.</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Property Photos</p>
+              <p className="text-xs text-gray-400">Upload multiple photos. The first photo is used as the cover on property cards.</p>
               <ImageDropzone
                 previews={imagePreview}
                 onAdd={handleAddImage}
                 onRemove={handleRemoveImage}
-                onSetPrimary={() => {}}
+                onSetPrimary={handleSetPrimary}
                 primaryIdx={0}
                 imageError={imageError}
               />

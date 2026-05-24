@@ -240,18 +240,6 @@ export default function LoginPage() {
                 <div className="flex-1 h-px bg-border" />
               </div>
 
-              {/* Sign up link */}
-              {/* 
-              <p className="text-center text-sm text-gray-mid mt-4">
-                Don't have an account?{" "}
-                <Link
-                  href="/register"
-                  className="text-primary font-medium"
-                >
-                  Sign up
-                </Link>
-              </p> 
-              */}
             </form>
           </div>
         </div>
