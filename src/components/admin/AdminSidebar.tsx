@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, PlusCircle, Bell,
-  Settings, MessageSquare, LogOut, Home,
+  MessageSquare, LogOut, Home,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { CurrentUser } from "@/src/types/auth";
 
 const navItems = [
   {
@@ -25,7 +27,6 @@ const navItems = [
     label: "System",
     items: [
       { icon: Bell, label: "Notifications", href: "/admin/dashboard/Notification" },
-      // { icon: Settings, label: "Settings", href: "/admin/settings" },
     ],
   },
   {
@@ -36,8 +37,27 @@ const navItems = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ user }: { user: CurrentUser }) {
+  const initials = user?.fullName
+    ? user?.fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "KR";
+
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
@@ -93,14 +113,14 @@ export function AdminSidebar() {
       <div className="space-y-1 border-t border-gray-100 p-3">
         <div className="flex items-center gap-2.5 px-3 py-2">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
-            KR
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-800">Karisimbi RE</p>
-            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-400">Administrator</p>
+            <p className="truncate text-sm font-semibold text-gray-800"> {user.fullName}</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-400">{user.role}</p>
           </div>
         </div>
-        <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-500 transition-all hover:bg-red-50 hover:text-red-600">
+        <button onClick={handleLogout} className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-500 transition-all hover:bg-red-50 hover:text-red-600">
           <LogOut size={14} />
           Log Out
         </button>
