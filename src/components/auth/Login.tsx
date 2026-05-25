@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
+import { toast } from "react-toastify";
 
 // ── SCHEMA ──
 const loginSchema = z.object({
@@ -68,7 +69,10 @@ export default function LoginPage() {
 
     setErrors(errs);
 
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0) {
+      toast.error("Please fix the form errors");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -86,17 +90,30 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setServerError(data.error || "Login failed");
+        const errorMessage = data.error || "Login failed";
+
+        setServerError(errorMessage);
+
+        toast.error(errorMessage);
+
         return;
       }
 
-      console.log("Login Success:",data);
+      console.log("Login Success:", data);
 
-      // redirect after login
-      router.push("/admin/dashboard");
+      toast.success("Login successful!");
+
+      setTimeout(() => {
+        router.push("/admin/dashboard");
+      }, 1500);
     } catch (error) {
       console.error(error);
-      setServerError("Something went wrong. Please try again.");
+
+      const message = "Something went wrong. Please try again.";
+
+      setServerError(message);
+
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -230,7 +247,7 @@ export default function LoginPage() {
               </button>
 
               {/* Divider */}
-              <div className="flex items-center gap-3 my-4">
+              {/* <div className="flex items-center gap-3 my-4">
                 <div className="flex-1 h-px bg-border" />
 
                 <span className="text-xs text-gray-mid">
@@ -238,8 +255,7 @@ export default function LoginPage() {
                 </span>
 
                 <div className="flex-1 h-px bg-border" />
-              </div>
-
+              </div> */}
             </form>
           </div>
         </div>

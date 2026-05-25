@@ -342,9 +342,7 @@ export default function PropertyDetailPage() {
               </div>
 
               {/* Trust note */}
-              <p className="mt-4 text-center text-[11px] text-gray-400">
-                🔒 Secure inquiry — no spam, ever
-              </p>
+             
             </div>
           </div>
 
