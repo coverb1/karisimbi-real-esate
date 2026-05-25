@@ -7,6 +7,17 @@ import { ArrowUpRight, MapPin } from "lucide-react";
 import { AnimatedSection } from "../animations/AnimatedSection";
 import { getPrimaryPropertyImage } from "@/src/lib/property-images";
 
+// ─── CATEGORIES ─────────────────────────────
+const categories = [
+  "All",
+  "Houses",
+  "Plots",
+  "Villa",
+  "Family House",
+  "Penthouse",
+];
+
+// ─── TYPE ───────────────────────────────────
 type Property = {
   id: string;
   title: string;
@@ -17,6 +28,7 @@ type Property = {
   image_url: string | null;
 };
 
+// ─── SKELETON ───────────────────────────────
 function SkeletonCard() {
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -30,21 +42,29 @@ function SkeletonCard() {
   );
 }
 
+// ─── MAIN PAGE ──────────────────────────────
 export default function AllPropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [filtered, setFiltered] = useState<Property[]>([]);
+  const [active, setActive] = useState("All");
+
   const [loading, setLoading] = useState(true);
 
+  // ─── FETCH ALL PROPERTIES ───
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
 
       try {
         const res = await fetch(`/api/user/properties/get`);
-
         const data = await res.json();
-        setProperties(data.properties ?? []);
+
+        const all = data.properties ?? [];
+        setProperties(all);
+        setFiltered(all);
       } catch {
         setProperties([]);
+        setFiltered([]);
       } finally {
         setLoading(false);
       }
@@ -53,9 +73,27 @@ export default function AllPropertiesPage() {
     fetchAll();
   }, []);
 
+  // ─── FILTER LOGIC ───
+  function handleFilter(type: string) {
+    setActive(type);
+
+    if (type === "All") {
+      setFiltered(properties);
+      return;
+    }
+
+    const result = properties.filter(
+      (p) => p.type.toLowerCase() === type.toLowerCase()
+    );
+
+    setFiltered(result);
+  }
+
   return (
     <section className="bg-white py-16 px-8 lg:px-12">
       <AnimatedSection className="mx-auto max-w-300">
+
+        {/* HEADER */}
         <div className="mb-8">
           <h3 className="text-primary font-semibold uppercase tracking-wide text-sm">
             All Properties
@@ -65,23 +103,47 @@ export default function AllPropertiesPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading &&
-            Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        {/* FILTERS (ADDED) */}
+        <div className="mb-10 flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => handleFilter(cat)}
+              disabled={loading}
+              className={[
+                "rounded-full px-5 h-9 text-[13px] font-medium border",
+                active === cat
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-600 border-gray-200",
+                loading ? "opacity-60 pointer-events-none" : "",
+              ].join(" ")}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
-          {!loading && properties.length === 0 && (
+        {/* GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {loading &&
+            Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+
+          {!loading && filtered.length === 0 && (
             <div className="col-span-full py-20 text-center">
               <p className="text-sm font-semibold text-gray-700">
-                No properties yet
+                No properties found
               </p>
               <p className="mt-1 text-xs text-gray-400">
-                Check back soon - new listings are added regularly.
+                Try another category
               </p>
             </div>
           )}
 
           {!loading &&
-            properties.map((property) => {
+            filtered.map((property) => {
               const coverImage = getPrimaryPropertyImage(property.image_url);
 
               return (
@@ -129,6 +191,7 @@ export default function AllPropertiesPage() {
               );
             })}
         </div>
+
       </AnimatedSection>
     </section>
   );
