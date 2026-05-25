@@ -101,7 +101,7 @@ export function Navigation() {
             </Link>
 
             <Link
-              href="/book-visit"
+              href="/sell-property"
               className="inline-flex items-center justify-center h-10 px-4 sm:px-5 rounded-full
                          border border-black/15 bg-transparent
                          text-[11px] font-semibold uppercase tracking-widest text-black/60
@@ -109,11 +109,11 @@ export function Navigation() {
                          hover:border-primary/40 hover:text-primary hover:bg-primary/5
                          no-underline"
             >
-              Book a Visit
+               sell-propery
             </Link>
 
             <Link
-              href="/properties"
+              href="/book-visit"
               className="inline-flex items-center justify-center h-10 px-4 sm:px-5 rounded-full
                          bg-primary text-white
                          text-[11px] font-bold uppercase tracking-widest
@@ -122,7 +122,7 @@ export function Navigation() {
                          hover:bg-primary/90 hover:-translate-y-px hover:shadow-[0_6px_24px_rgba(122,34,64,0.35)]
                          no-underline"
             >
-              List Property
+              property visit 
             </Link>
           </div>
 
@@ -181,24 +181,24 @@ export function Navigation() {
               </Link>
 
               <Link
-                href="/book-visit"
+                href="/sell-property"
                 className="flex h-12 items-center justify-center rounded-full
                            border border-black/12 text-[11px] font-semibold uppercase
                            tracking-widest text-black/60 no-underline
                            transition-all duration-200 hover:border-primary/40 hover:text-primary"
               >
-                Book a Visit
+                sell-propery
               </Link>
 
               <Link
-                href="/properties"
+                href="/book-visit"
                 className="flex h-12 items-center justify-center rounded-full
                            bg-primary text-white text-[11px] font-bold uppercase
                            tracking-widest no-underline
                            shadow-[0_2px_16px_rgba(122,34,64,0.25)]
                            transition-all duration-200 hover:bg-primary/90"
               >
-                List Property
+                 property visit 
               </Link>
             </div>
           </div>
