@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Linkedin, Mail } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 
 const team = [
   {
