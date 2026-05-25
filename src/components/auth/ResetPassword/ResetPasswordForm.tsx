@@ -267,7 +267,7 @@ function ResetPasswordInner() {
             className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors no-underline"
           >
             <ArrowLeft size={14} />
-            Back to Login
+            Back to Login.
           </Link>
         </div>
 
