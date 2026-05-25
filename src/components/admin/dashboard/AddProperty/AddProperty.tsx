@@ -6,10 +6,10 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // ─── Schema — only fields that exist in the database ─────────────────────────
-// title, location, type, price, bedrooms, bathrooms, area, image_url, status
-
 const formSchema = z.object({
   title: z
     .string()
@@ -248,12 +248,10 @@ function ImageDropzone({
 export default function AddPropertyPage() {
   const [step, setStep] = useState(0);
 
-  // The first image in this list is the cover image.
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
 
   const [imageError, setImageError] = useState<string | undefined>();
-  const [submitError, setSubmitError] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -266,28 +264,36 @@ export default function AddPropertyPage() {
     },
   });
 
-  // Step 0 — title, location, type, status, price
   const step0Fields: (keyof FormValues)[] = ["title", "location", "type", "status", "price"];
-  // Step 1 — bedrooms, bathrooms, area
   const step1Fields: (keyof FormValues)[] = ["bedrooms", "bathrooms", "area"];
 
+  // ── Step navigation — NO toasts, just move forward if valid ──
   async function handleNext() {
     const fields = step === 0 ? step0Fields : step1Fields;
     const valid = await trigger(fields);
-    if (valid) setStep((s) => s + 1);
+    if (valid) {
+      setStep((s) => s + 1);
+    }
+    // Invalid: inline field errors already surface via react-hook-form, no toast needed
   }
 
+  // ── Final submit — ALL toastify notifications live here ──
   async function handleSubmit() {
     if (imageFiles.length === 0) {
       setImageError("Please upload at least one property photo");
+      // Single toast for missing photo on submit attempt
+      toast.error("Please upload at least one property photo.", {
+        position: "top-right",
+        autoClose: 3500,
+      });
       return;
     }
     setImageError(undefined);
-    setSubmitError(undefined);
     setSubmitting(true);
 
+    const toastId = toast.loading("Uploading photos…", { position: "top-right" });
+
     try {
-      // Step 1: Convert images to base64 and upload to Cloudinary
       const base64Images = await Promise.all(imageFiles.map(fileToBase64));
 
       const uploadRes = await fetch("/api/uploadToCloudinary", {
@@ -304,22 +310,23 @@ export default function AddPropertyPage() {
       const { mainImageUrl, imageUrls } = await uploadRes.json();
       const uploadedImageUrls = Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls : [mainImageUrl].filter(Boolean);
 
-      // Step 2: Save to database — only the columns in your DB blueprint
+      toast.update(toastId, { render: "Saving property…", type: "default", isLoading: true });
+
       const values = getValues();
 
       const saveRes = await fetch("/api/Addproperties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title:     values.title,
-          location:  values.location,
-          type:      values.type,
-          status:    values.status,
-          price:     parseInt(values.price.replace(/,/g, ""), 10),
-          bedrooms:  parseInt(values.bedrooms, 10),
-          bathrooms: parseInt(values.bathrooms, 10),
-          area:      parseInt(values.area, 10),
-          image_url: uploadedImageUrls[0],
+          title:      values.title,
+          location:   values.location,
+          type:       values.type,
+          status:     values.status,
+          price:      parseInt(values.price.replace(/,/g, ""), 10),
+          bedrooms:   parseInt(values.bedrooms, 10),
+          bathrooms:  parseInt(values.bathrooms, 10),
+          area:       parseInt(values.area, 10),
+          image_url:  uploadedImageUrls[0],
           image_urls: uploadedImageUrls,
         }),
       });
@@ -329,14 +336,30 @@ export default function AddPropertyPage() {
         throw new Error(err.error || "Failed to save property");
       }
 
+      // ✅ Success toast — only shown after everything is saved
+      toast.update(toastId, {
+        render: `"${getValues().title}" is now live!`,
+        type: "success",
+        isLoading: false,
+        autoClose: 4000,
+      });
+
       setSubmitted(true);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      // ❌ Error toast — only shown when something actually fails
+      toast.update(toastId, {
+        render: `❌ ${message}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
     } finally {
       setSubmitting(false);
     }
   }
 
+  // ── Image handlers — no toasts, UI state is enough feedback ──
   function handleAddImage(files: File[]) {
     if (files.length === 0) return;
     setImageFiles((current) => [...current, ...files]);
@@ -351,7 +374,6 @@ export default function AddPropertyPage() {
       setImagePreview([]);
       return;
     }
-
     if (imagePreview[index]) URL.revokeObjectURL(imagePreview[index]);
     setImageFiles((current) => current.filter((_, i) => i !== index));
     setImagePreview((current) => current.filter((_, i) => i !== index));
@@ -373,7 +395,6 @@ export default function AddPropertyPage() {
 
   const values = getValues();
 
-  // Checklist — exactly the DB columns, nothing more
   const checklist = [
     { label: "Property title", done: (values.title?.length ?? 0) >= 5 },
     { label: "Location", done: !!values.location },
@@ -391,269 +412,280 @@ export default function AddPropertyPage() {
   // ── Success screen ──
   if (submitted) {
     return (
-      <div className="admin-shell flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-16">
-        <div className="flex flex-col items-center gap-5 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50/50">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1a5c2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><polyline points="9 12 11 14 15 10" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="landing-title-compact text-gray-900">Property Listed!</h2>
-            <p className="landing-body mt-2 max-w-sm text-gray-500">
-              <span className="font-semibold text-gray-800">{values.title || "Your property"}</span> is now live on Karisimbi RE.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/admin/dashboard" className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              Back to Dashboard
-            </Link>
-            <button
-              onClick={() => { reset(); handleRemoveImage(); setStep(0); setSubmitted(false); }}
-              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-            >
-              Add Another
-            </button>
+      <>
+        <ToastContainer />
+        <div className="admin-shell flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-16">
+          <div className="flex flex-col items-center gap-5 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50/50">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1a5c2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><polyline points="9 12 11 14 15 10" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="landing-title-compact text-gray-900">Property Listed!</h2>
+              <p className="landing-body mt-2 max-w-sm text-gray-500">
+                <span className="font-semibold text-gray-800">{values.title || "Your property"}</span> is now live on Karisimbi RE.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/admin/dashboard" className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                Back to Dashboard
+              </Link>
+              <button
+                onClick={() => { reset(); handleRemoveImage(); setStep(0); setSubmitted(false); }}
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                Add Another
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="admin-shell min-h-screen bg-surface">
+    <>
+      {/* ── Toast container — only fires during final publish ── */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
 
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 border-b border-gray-100 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3">
-          <Link href="/admin/dashboard" className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-            Dashboard
-          </Link>
-          <StepIndicator current={step} />
-          <div className="w-20" />
+      <div className="admin-shell min-h-screen bg-surface">
+
+        {/* Top bar */}
+        <div className="sticky top-0 z-10 border-b border-gray-100 bg-white/90 backdrop-blur-md">
+          <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3">
+            <Link href="/admin/dashboard" className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+              Dashboard
+            </Link>
+            <StepIndicator current={step} />
+            <div className="w-20" />
+          </div>
         </div>
-      </div>
 
-      <div className="mx-auto max-w-4xl px-5 py-8">
-        <div className="mb-8">
-          <p className="landing-eyebrow text-primary">Properties · New Listing</p>
-          <h1 className="landing-title-compact mt-1 text-gray-900">Add Property</h1>
-          <p className="landing-body mt-1 text-gray-500">
-            {step === 0 && "Enter the property identity, location and price."}
-            {step === 1 && "Enter the number of rooms and total area."}
-            {step === 2 && "Upload property photos then publish."}
-          </p>
-        </div>
+        <div className="mx-auto max-w-4xl px-5 py-8">
+          <div className="mb-8">
+            <p className="landing-eyebrow text-primary">Properties · New Listing</p>
+            <h1 className="landing-title-compact mt-1 text-gray-900">Add Property</h1>
+            <p className="landing-body mt-1 text-gray-500">
+              {step === 0 && "Enter the property identity, location and price."}
+              {step === 1 && "Enter the number of rooms and total area."}
+              {step === 2 && "Upload property photos then publish."}
+            </p>
+          </div>
 
-        {/* ══ STEP 0 — title, location, type, status, price ══ */}
-        {step === 0 && (
-          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-            <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Basic Information</p>
+          {/* ══ STEP 0 ══ */}
+          {step === 0 && (
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+              <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Basic Information</p>
 
-              <Field label="Property Title" error={errors.title?.message}>
-                <input {...register("title")} placeholder="e.g. Modern Luxury Villa" className={inputCls(errors.title?.message)} />
-              </Field>
-
-              <Field label="Location / District" error={errors.location?.message}>
-                <input {...register("location")} placeholder="e.g. Kigali" className={inputCls(errors.location?.message)} />
-              </Field>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Property Type" error={errors.type?.message}>
-                  <SelectWrapper>
-                    <select {...register("type")} className={selectCls(errors.type?.message)}>
-                      <option value="">Select type</option>
-                      {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </SelectWrapper>
+                <Field label="Property Title" error={errors.title?.message}>
+                  <input {...register("title")} placeholder="e.g. Modern Luxury Villa" className={inputCls(errors.title?.message)} />
                 </Field>
 
-                <Field label="Listing Status" error={errors.status?.message}>
-                  <SelectWrapper>
-                    <select {...register("status")} className={selectCls(errors.status?.message)}>
-                      <option value="">Select status</option>
-                      {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </SelectWrapper>
+                <Field label="Location / District" error={errors.location?.message}>
+                  <input {...register("location")} placeholder="e.g. Kigali" className={inputCls(errors.location?.message)} />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Property Type" error={errors.type?.message}>
+                    <SelectWrapper>
+                      <select {...register("type")} className={selectCls(errors.type?.message)}>
+                        <option value="">Select type</option>
+                        {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </SelectWrapper>
+                  </Field>
+
+                  <Field label="Listing Status" error={errors.status?.message}>
+                    <SelectWrapper>
+                      <select {...register("status")} className={selectCls(errors.status?.message)}>
+                        <option value="">Select status</option>
+                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </SelectWrapper>
+                  </Field>
+                </div>
+
+                <Field label="Price (RWF)" error={errors.price?.message}>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">RWF</span>
+                    <input {...register("price")} placeholder="e.g. 450,000,000" className={`${inputCls(errors.price?.message)} pl-12`} />
+                  </div>
                 </Field>
               </div>
 
-              <Field label="Price (RWF)" error={errors.price?.message}>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">RWF</span>
-                  <input {...register("price")} placeholder="e.g. 450,000,000" className={`${inputCls(errors.price?.message)} pl-12`} />
-                </div>
-              </Field>
-            </div>
-
-            {/* Live preview */}
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <p className="landing-eyebrow mb-4 text-gray-400">Live Preview</p>
-                <div className="overflow-hidden rounded-xl border border-gray-100">
-                  <div className="flex h-36 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbcbcb" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate text-gray-900">{values.title || "Property Title"}</p>
-                        <p className="mt-0.5 text-xs text-gray-400 truncate">{values.location || "Location"}</p>
+              {/* Live preview */}
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <p className="landing-eyebrow mb-4 text-gray-400">Live Preview</p>
+                  <div className="overflow-hidden rounded-xl border border-gray-100">
+                    <div className="flex h-36 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbcbcb" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+                      </svg>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate text-gray-900">{values.title || "Property Title"}</p>
+                          <p className="mt-0.5 text-xs text-gray-400 truncate">{values.location || "Location"}</p>
+                        </div>
+                        {values.status && (
+                          <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${STATUS_STYLES[values.status as Status]}`}>
+                            {values.status}
+                          </span>
+                        )}
                       </div>
-                      {values.status && (
-                        <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${STATUS_STYLES[values.status as Status]}`}>
-                          {values.status}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="text-sm font-bold text-primary">{values.price ? `RWF ${values.price}` : "RWF —"}</p>
-                      <p className="text-xs text-gray-400">{values.type || "Type"}</p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-sm font-bold text-primary">{values.price ? `RWF ${values.price}` : "RWF —"}</p>
+                        <p className="text-xs text-gray-400">{values.type || "Type"}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ══ STEP 1 — bedrooms, bathrooms, area ══ */}
-        {step === 1 && (
-          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-            <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Rooms & Size</p>
+          {/* ══ STEP 1 ══ */}
+          {step === 1 && (
+            <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+              <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Rooms & Size</p>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Bedrooms" error={errors.bedrooms?.message}>
-                  <SelectWrapper>
-                    <select {...register("bedrooms")} className={selectCls(errors.bedrooms?.message)}>
-                      <option value="">—</option>
-                      {BED_BATH.map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </SelectWrapper>
-                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Bedrooms" error={errors.bedrooms?.message}>
+                    <SelectWrapper>
+                      <select {...register("bedrooms")} className={selectCls(errors.bedrooms?.message)}>
+                        <option value="">—</option>
+                        {BED_BATH.map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </SelectWrapper>
+                  </Field>
 
-                <Field label="Bathrooms" error={errors.bathrooms?.message}>
-                  <SelectWrapper>
-                    <select {...register("bathrooms")} className={selectCls(errors.bathrooms?.message)}>
-                      <option value="">—</option>
-                      {BED_BATH.map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </SelectWrapper>
+                  <Field label="Bathrooms" error={errors.bathrooms?.message}>
+                    <SelectWrapper>
+                      <select {...register("bathrooms")} className={selectCls(errors.bathrooms?.message)}>
+                        <option value="">—</option>
+                        {BED_BATH.map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </SelectWrapper>
+                  </Field>
+                </div>
+
+                <Field label="Total Area (m²)" error={errors.area?.message}>
+                  <input {...register("area")} placeholder="e.g. 420" className={inputCls(errors.area?.message)} />
                 </Field>
               </div>
 
-              <Field label="Total Area (m²)" error={errors.area?.message}>
-                <input {...register("area")} placeholder="e.g. 420" className={inputCls(errors.area?.message)} />
-              </Field>
-            </div>
-
-            {/* Spec summary */}
-            <div className="h-fit rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-              <p className="landing-eyebrow mb-4 text-gray-400">Summary</p>
-              <div className="space-y-3">
-                {[
-                  { label: "Bedrooms", val: values.bedrooms, icon: "🛏" },
-                  { label: "Bathrooms", val: values.bathrooms, icon: "🚿" },
-                  { label: "Area", val: values.area ? `${values.area} m²` : "", icon: "📐" },
-                ].map(({ label, val, icon }) => (
-                  <div key={label} className={`flex items-center justify-between rounded-xl p-3 transition-colors ${val ? "bg-secondary" : "bg-gray-50"}`}>
-                    <div className="flex items-center gap-2">
-                      <span>{icon}</span>
-                      <span className="text-xs font-medium text-gray-500">{label}</span>
-                    </div>
-                    <span className={`text-sm font-bold ${val ? "text-gray-800" : "text-gray-300"}`}>{val || "—"}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══ STEP 2 — image_url (one photo) + publish ══ */}
-        {step === 2 && (
-          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-            <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Property Photos</p>
-              <p className="text-xs text-gray-400">Upload multiple photos. The first photo is used as the cover on property cards.</p>
-              <ImageDropzone
-                previews={imagePreview}
-                onAdd={handleAddImage}
-                onRemove={handleRemoveImage}
-                onSetPrimary={handleSetPrimary}
-                primaryIdx={0}
-                imageError={imageError}
-              />
-            </div>
-
-            {/* Checklist */}
-            <div className="space-y-4">
+              {/* Spec summary */}
               <div className="h-fit rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <p className="landing-eyebrow mb-4 text-gray-400">Publish Checklist</p>
-                <div className="space-y-2.5">
-                  {checklist.map(({ label, done }) => (
-                    <div key={label} className="flex items-center gap-2.5">
-                      <div className={`flex shrink-0 items-center justify-center rounded-full transition-all ${done ? "bg-emerald-500" : "border-2 border-gray-200"}`} style={{ height: 18, width: 18 }}>
-                        {done && <IconCheck />}
+                <p className="landing-eyebrow mb-4 text-gray-400">Summary</p>
+                <div className="space-y-3">
+                  {[
+                    { label: "Bedrooms", val: values.bedrooms, icon: "🛏" },
+                    { label: "Bathrooms", val: values.bathrooms, icon: "🚿" },
+                    { label: "Area", val: values.area ? `${values.area} m²` : "", icon: "📐" },
+                  ].map(({ label, val, icon }) => (
+                    <div key={label} className={`flex items-center justify-between rounded-xl p-3 transition-colors ${val ? "bg-secondary" : "bg-gray-50"}`}>
+                      <div className="flex items-center gap-2">
+                        <span>{icon}</span>
+                        <span className="text-xs font-medium text-gray-500">{label}</span>
                       </div>
-                      <span className={`text-xs font-medium ${done ? "text-gray-700" : "text-gray-400"}`}>{label}</span>
+                      <span className={`text-sm font-bold ${val ? "text-gray-800" : "text-gray-300"}`}>{val || "—"}</span>
                     </div>
                   ))}
                 </div>
-                <div className={`mt-4 rounded-xl px-3.5 py-3 text-[11px] leading-relaxed ${allDone ? "bg-emerald-50 text-emerald-700" : "bg-gray-50 text-gray-400"}`}>
-                  {allDone
-                    ? "✅ All good! Ready to publish."
-                    : `${checklist.filter((c) => !c.done).length} item${checklist.filter((c) => !c.done).length > 1 ? "s" : ""} still needed.`}
-                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══ STEP 2 ══ */}
+          {step === 2 && (
+            <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+              <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Property Photos</p>
+                <p className="text-xs text-gray-400">Upload multiple photos. The first photo is used as the cover on property cards.</p>
+                <ImageDropzone
+                  previews={imagePreview}
+                  onAdd={handleAddImage}
+                  onRemove={handleRemoveImage}
+                  onSetPrimary={handleSetPrimary}
+                  primaryIdx={0}
+                  imageError={imageError}
+                />
               </div>
 
-              {submitError && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                  <p className="text-xs font-semibold text-red-600">⚠️ Error</p>
-                  <p className="mt-1 text-xs text-red-500">{submitError}</p>
+              {/* Checklist */}
+              <div className="space-y-4">
+                <div className="h-fit rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <p className="landing-eyebrow mb-4 text-gray-400">Publish Checklist</p>
+                  <div className="space-y-2.5">
+                    {checklist.map(({ label, done }) => (
+                      <div key={label} className="flex items-center gap-2.5">
+                        <div className={`flex shrink-0 items-center justify-center rounded-full transition-all ${done ? "bg-emerald-500" : "border-2 border-gray-200"}`} style={{ height: 18, width: 18 }}>
+                          {done && <IconCheck />}
+                        </div>
+                        <span className={`text-xs font-medium ${done ? "text-gray-700" : "text-gray-400"}`}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`mt-4 rounded-xl px-3.5 py-3 text-[11px] leading-relaxed ${allDone ? "bg-emerald-50 text-emerald-700" : "bg-gray-50 text-gray-400"}`}>
+                    {allDone
+                      ? "✅ All good! Ready to publish."
+                      : `${checklist.filter((c) => !c.done).length} item${checklist.filter((c) => !c.done).length > 1 ? "s" : ""} still needed.`}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="mt-8 flex items-center justify-between">
-          <button
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
-            disabled={step === 0 || submitting}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:pointer-events-none disabled:opacity-30"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-            Back
-          </button>
-
-          {step < 2 ? (
-            <button onClick={handleNext} className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity">
-              Continue →
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity disabled:opacity-70"
-            >
-              {submitting ? (
-                <>
-                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  Publishing…
-                </>
-              ) : "Publish Property"}
-            </button>
           )}
+
+          {/* Navigation */}
+          <div className="mt-8 flex items-center justify-between">
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0 || submitting}
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:pointer-events-none disabled:opacity-30"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+              Back
+            </button>
+
+            {step < 2 ? (
+              <button onClick={handleNext} className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity">
+                Continue →
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity disabled:opacity-70"
+              >
+                {submitting ? (
+                  <>
+                    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    Publishing…
+                  </>
+                ) : "Publish Property"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -3,6 +3,9 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { SiteChrome } from "../components/SiteChrome";
 
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const poppins = Poppins({
   variable: "--font-site",
   subsets: ["latin"],
@@ -27,6 +30,7 @@ export default function RootLayout({
     <html lang="en" className={`${poppins.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <SiteChrome>{children}</SiteChrome>
+          <ToastContainer position="top-right" autoClose={3000} />
       </body>
     </html>
   );
