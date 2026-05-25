@@ -113,7 +113,7 @@ export function Navigation() {
             </Link>
 
             <Link
-              href="/sell-property"
+              href="/properties"
               className="inline-flex items-center justify-center h-10 px-4 sm:px-5 rounded-full
                          bg-primary text-white
                          text-[11px] font-bold uppercase tracking-widest
@@ -171,7 +171,7 @@ export function Navigation() {
 
             <div className="mt-4 flex flex-col gap-2.5 border-t border-black/6 pt-5">
               <Link
-                href="/app/login"
+                href="/login"
                 className="flex h-12 items-center justify-center rounded-full
                            border border-black/12 text-[11px] font-semibold uppercase
                            tracking-widest text-black/60 no-underline
@@ -191,7 +191,7 @@ export function Navigation() {
               </Link>
 
               <Link
-                href="/sell-property"
+                href="/properties"
                 className="flex h-12 items-center justify-center rounded-full
                            bg-primary text-white text-[11px] font-bold uppercase
                            tracking-widest no-underline
