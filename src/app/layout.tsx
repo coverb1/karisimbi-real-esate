@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { SiteChrome } from "../components/SiteChrome";
+import  WhatsAppButton from "@/src/components/WhatsAppButton/WhatsAppButton"
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <SiteChrome>{children}</SiteChrome>
           <ToastContainer position="top-right" autoClose={3000} />
+          <WhatsAppButton/>
       </body>
     </html>
   );
