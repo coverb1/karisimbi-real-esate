@@ -1,20 +1,39 @@
+// 📁 File: src/components/properties/property-card.tsx
+
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Bed, Bath, Square, ArrowUpRight } from "lucide-react";
-import type { Property, PropertyCategory } from "@/src/lib/mock-data";
+import { getPrimaryPropertyImage } from "@/src/lib/property-images";
+import type { DBProperty } from "./properties-listings";
 
-const categoryStyles: Record<PropertyCategory, { color: string; bg: string }> =
-  {
-    house: { color: "text-primary", bg: "bg-primary/8 border-primary/15" },
-    land: {
-      color: "text-emerald-700",
-      bg: "bg-emerald-50 border-emerald-200/60",
-    },
-    plot: { color: "text-blue-700", bg: "bg-blue-50 border-blue-200/60" },
-  };
+// ─── TYPE COLOR MAP ───────────────────────────────────────────────────────────
+// Maps property type strings (as stored in DB) to visual styles.
+// Add more entries here as your types grow.
 
-export function PropertyCard({ property }: { property: Property }) {
-  const style = categoryStyles[property.category];
+const TYPE_STYLES: Record<string, { color: string; bg: string }> = {
+  House:        { color: "text-primary",     bg: "bg-primary/8 border-primary/15"       },
+  "Family House": { color: "text-primary",   bg: "bg-primary/8 border-primary/15"       },
+  Villa:        { color: "text-primary",     bg: "bg-primary/8 border-primary/15"       },
+  Penthouse:    { color: "text-primary",     bg: "bg-primary/8 border-primary/15"       },
+  Land:         { color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200/60"  },
+  Plot:         { color: "text-blue-700",    bg: "bg-blue-50 border-blue-200/60"        },
+};
+
+const DEFAULT_STYLE = { color: "text-primary", bg: "bg-primary/8 border-primary/15" };
+
+// ─── COMPONENT ────────────────────────────────────────────────────────────────
+
+export function PropertyCard({ property }: { property: DBProperty }) {
+  const style = TYPE_STYLES[property.type] ?? DEFAULT_STYLE;
+  const coverImage = getPrimaryPropertyImage(property.image_url);
+
+  // Format price: DB stores full RWF e.g. 50000000 → "RWF 50,000,000"
+  const formattedPrice = `RWF ${property.price.toLocaleString()}`;
+
+  // Format area: DB stores numeric sqm
+  const formattedArea = property.area
+    ? `${property.area.toLocaleString()} m²`
+    : null;
 
   return (
     <Link
@@ -25,12 +44,19 @@ export function PropertyCard({ property }: { property: Property }) {
     >
       {/* Image */}
       <div className="relative h-50 w-full overflow-hidden bg-gray-100">
-        <Image
-          src={property.image}
-          alt={property.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-        />
+        {coverImage ? (
+          <Image
+            src={coverImage}
+            alt={property.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+        ) : (
+          // Placeholder when no image
+          <div className="h-full w-full flex items-center justify-center bg-gray-50">
+            <Square size={32} className="text-gray-200" />
+          </div>
+        )}
 
         {/* Type badge */}
         <div className="absolute left-3 top-3">
@@ -52,7 +78,7 @@ export function PropertyCard({ property }: { property: Property }) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col p-5">
-        <h5 className="mb-1.5 text-[14.5px] font-semibold leading-snug text-gray-900">
+        <h5 className="mb-1.5 text-[14.5px] font-semibold leading-snug text-gray-900 truncate">
           {property.title}
         </h5>
         <div className="mb-4 flex items-center gap-1.5 text-[12px] text-gray-400">
@@ -62,30 +88,30 @@ export function PropertyCard({ property }: { property: Property }) {
 
         {/* Specs */}
         <div className="mb-4 flex items-center gap-4 border-b border-gray-100 pb-4 text-[12px] text-gray-400">
-          {property.beds ? (
+          {property.bedrooms ? (
             <>
               <span className="flex items-center gap-1.5">
                 <Bed size={12} strokeWidth={1.8} className="text-gray-300" />
-                {property.beds} Bed
+                {property.bedrooms} Bed
               </span>
               <span className="flex items-center gap-1.5">
                 <Bath size={12} strokeWidth={1.8} className="text-gray-300" />
-                {property.baths} Bath
+                {property.bathrooms} Bath
               </span>
             </>
           ) : null}
-          <span className="flex items-center gap-1.5">
-            <Square size={12} strokeWidth={1.8} className="text-gray-300" />
-            {property.area}
-          </span>
+          {formattedArea && (
+            <span className="flex items-center gap-1.5">
+              <Square size={12} strokeWidth={1.8} className="text-gray-300" />
+              {formattedArea}
+            </span>
+          )}
         </div>
 
         {/* Price */}
         <div className="mt-auto flex items-end justify-between">
-          <p
-            className={`font-heading m-0 text-[17px] font-bold ${style.color}`}
-          >
-            {property.price}
+          <p className={`font-heading m-0 text-[17px] font-bold ${style.color}`}>
+            {formattedPrice}
           </p>
           <span className="text-[10.5px] text-gray-300">Incl. fees</span>
         </div>
