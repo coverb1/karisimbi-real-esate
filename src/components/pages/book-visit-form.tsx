@@ -14,6 +14,7 @@ import {
   Send,
 } from "lucide-react";
 import { z } from "zod";
+import { toast } from "react-toastify";
 
 interface FormState {
   fullName: string;
@@ -90,25 +91,20 @@ const defaultForm: FormState = {
 
 /* ─── HELPERS ─── */
 
-/** Strip any non-digit character except a leading + */
 function sanitizePhone(value: string): string {
-  // Allow leading + then only digits and spaces
   return value.replace(/[^0-9+\s]/g, "").replace(/(?!^)\+/g, "");
 }
 
-/** Strip anything that is not a digit or comma */
 function sanitizePrice(value: string): string {
   return value.replace(/[^0-9,]/g, "");
 }
 
-/** Block non-numeric keys on keydown (allows backspace, arrows, tab, delete) */
 function blockNonDigitKeys(e: React.KeyboardEvent<HTMLInputElement>) {
   const allowed = [
     "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
     "Home", "End", "Enter", " ",
   ];
   if (allowed.includes(e.key)) return;
-  // Allow + only at position 0
   if (e.key === "+" && (e.currentTarget.selectionStart ?? 0) === 0) return;
   if (!/^[0-9]$/.test(e.key)) e.preventDefault();
 }
@@ -318,7 +314,6 @@ export function BookVisitForm() {
     (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  /** Controlled setter that also sanitizes the value */
   const setPhone = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, phone: sanitizePhone(e.target.value) }));
 
@@ -327,14 +322,20 @@ export function BookVisitForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
     setError(null);
 
     /* ─── ZOD VALIDATION ─── */
     const result = formSchema.safeParse(form);
+
     if (!result.success) {
       const firstError = result.error.errors[0]?.message;
+
       setError(firstError || "Please fill all required fields correctly.");
+
+      toast.error(firstError || "Validation failed");
+
       setLoading(false);
       return;
     }
@@ -350,13 +351,20 @@ export function BookVisitForm() {
 
       if (!json.success) {
         setError(json.message || "Something went wrong. Please try again.");
+
+        toast.error(json.message || "Something went wrong.");
+
         setLoading(false);
         return;
       }
 
+      toast.success("Form submitted successfully!");
+
       setSubmitted(true);
     } catch {
       setError("Network error. Please check your connection.");
+
+      toast.error("Network error. Please check your connection.");
     }
 
     setLoading(false);
@@ -403,6 +411,7 @@ export function BookVisitForm() {
             <p className="mt-1 text-gray-500">Schedule a Viewing</p>
           </div>
 
+          {/* Section 1 */}
           <div className="mb-8">
             <SectionHeader icon={User} title="Client Information" />
             <div className="flex flex-col gap-4">
@@ -413,7 +422,6 @@ export function BookVisitForm() {
                 placeholder="Jean Paul Nkurunziza"
                 value={form.fullName}
                 onChange={set("fullName")}
-                // Block digits in name
                 onKeyDown={(e) => {
                   if (/^[0-9]$/.test(e.key)) e.preventDefault();
                 }}
@@ -424,7 +432,7 @@ export function BookVisitForm() {
                   icon={Phone}
                   label="Phone Number"
                   required
-                  placeholder="+250 788 123 456"
+                  placeholder="+250 787 861 400"
                   value={form.phone}
                   onChange={setPhone}
                   onKeyDown={blockNonDigitKeys}
@@ -458,7 +466,6 @@ export function BookVisitForm() {
                   placeholder="1 1990 8 0012345 1 23"
                   value={form.idNumber}
                   onChange={set("idNumber")}
-                  // Allow alphanumeric, spaces, dashes only
                   onKeyDown={(e) => {
                     const allowed = [
                       "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
@@ -474,6 +481,7 @@ export function BookVisitForm() {
 
           <div className="mb-8 h-px bg-gray-100" />
 
+          {/* Section 2 */}
           <div className="mb-8">
             <SectionHeader icon={Home} title="Property to Visit" />
             <div className="flex flex-col gap-4">
@@ -537,6 +545,7 @@ export function BookVisitForm() {
 
           <div className="mb-8 h-px bg-gray-100" />
 
+          {/* Section 3 */}
           <div className="mb-10">
             <SectionHeader icon={Car} title="Transportation" />
             <div className="flex flex-col gap-2.5">
@@ -574,6 +583,7 @@ export function BookVisitForm() {
           </button>
         </form>
 
+        {/* Sidebar */}
         <aside className="flex flex-col gap-5 lg:sticky lg:top-28">
           <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
             <h4 className="font-heading mb-5 text-[20px] font-bold text-gray-900">
@@ -608,10 +618,10 @@ export function BookVisitForm() {
             </p>
 
             <a
-              href="tel:+250788123456"
+              href="tel:+250787861400"
               className="mb-3 flex items-center gap-2.5 text-[13px] font-semibold text-white no-underline hover:text-white/80 transition-colors"
             >
-              <Phone size={14} strokeWidth={2} /> +250 788 123 456
+              <Phone size={14} strokeWidth={2} /> +250 787 861 400
             </a>
 
             <a

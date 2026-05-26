@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { z } from "zod";
+import { toast } from "react-toastify";
 import {
   User,
   Phone,
@@ -40,11 +40,12 @@ const formSchema = z.object({
     .string()
     .min(8, "Phone number is too short")
     .max(20, "Phone number is too long")
-    .regex(/^\+?[0-9\s]+$/, "Phone must contain only digits (and optional leading +)"),
+    .regex(
+      /^\+?[0-9\s]+$/,
+      "Phone must contain only digits (and optional leading +)"
+    ),
 
-  email: z
-    .string()
-    .email("Please enter a valid email address"),
+  email: z.string().email("Please enter a valid email address"),
 
   address: z
     .string()
@@ -53,7 +54,10 @@ const formSchema = z.object({
   idNumber: z
     .string()
     .min(3, "ID / Passport number is required")
-    .regex(/^[0-9A-Za-z\s-]+$/, "ID must contain only letters, numbers, spaces or dashes"),
+    .regex(
+      /^[0-9A-Za-z\s-]+$/,
+      "ID must contain only letters, numbers, spaces or dashes"
+    ),
 
   propertyType: z.string().min(1, "Please select a property type"),
 
@@ -62,16 +66,23 @@ const formSchema = z.object({
   propertySize: z
     .string()
     .min(1, "Property size is required")
-    .regex(/^[0-9]+(\.[0-9]+)?\s*(m²|sqft|m2)?$/, "Enter a valid size (e.g. 500 or 500 m²)"),
+    .regex(
+      /^[0-9]+(\.[0-9]+)?\s*(m²|sqft|m2)?$/,
+      "Enter a valid size (e.g. 500 or 500 m²)"
+    ),
 
   askingPrice: z
     .string()
     .min(1, "Asking price is required")
     .regex(/^[0-9,]+$/, "Price must contain only numbers"),
 
-  documentsAvailable: z.string().min(1, "Please select document status"),
+  documentsAvailable: z
+    .string()
+    .min(1, "Please select document status"),
 
-  hasIssues: z.string().min(1, "Please indicate if the property has issues"),
+  hasIssues: z
+    .string()
+    .min(1, "Please indicate if the property has issues"),
 
   issuesExplanation: z.string().optional(),
 });
@@ -103,34 +114,70 @@ function sanitizePrice(value: string): string {
 
 function blockNonDigitKeys(e: React.KeyboardEvent<HTMLInputElement>) {
   const allowed = [
-    "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
-    "Home", "End", " ",
+    "Backspace",
+    "Delete",
+    "Tab",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    " ",
   ];
+
   if (allowed.includes(e.key)) return;
+
   if (e.key === "+" && (e.currentTarget.selectionStart ?? 0) === 0) return;
+
   if (!/^[0-9]$/.test(e.key)) e.preventDefault();
 }
 
 function blockNonPriceKeys(e: React.KeyboardEvent<HTMLInputElement>) {
-  const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End", ","];
+  const allowed = [
+    "Backspace",
+    "Delete",
+    "Tab",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    ",",
+  ];
+
   if (allowed.includes(e.key)) return;
+
   if (!/^[0-9]$/.test(e.key)) e.preventDefault();
 }
 
 function blockNonSizeKeys(e: React.KeyboardEvent<HTMLInputElement>) {
-  // Allow digits, dot, space, letters for units (m, ², s, q, f, t)
   const allowed = [
-    "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
-    "Home", "End", " ", ".", "²",
+    "Backspace",
+    "Delete",
+    "Tab",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    " ",
+    ".",
+    "²",
   ];
+
   if (allowed.includes(e.key)) return;
+
   if (/^[0-9a-zA-Z²]$/.test(e.key)) return;
+
   e.preventDefault();
 }
 
 /* ─── COMPONENTS ─── */
 
-function Label({ text, required }: { text: string; required?: boolean }) {
+function Label({
+  text,
+  required,
+}: {
+  text: string;
+  required?: boolean;
+}) {
   return (
     <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">
       {text}
@@ -152,12 +199,14 @@ function InputField({
   return (
     <div>
       <Label text={label} required={required} />
+
       <div className="relative">
         <Icon
           size={15}
           strokeWidth={1.8}
           className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
         />
+
         <input
           {...props}
           className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4
@@ -196,8 +245,11 @@ function RadioCard({
           checked ? "border-primary" : "border-gray-300",
         ].join(" ")}
       >
-        {checked && <div className="h-[7px] w-[7px] rounded-full bg-primary" />}
+        {checked && (
+          <div className="h-[7px] w-[7px] rounded-full bg-primary" />
+        )}
       </div>
+
       {label}
     </button>
   );
@@ -215,6 +267,7 @@ function SectionHeader({
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
         <Icon size={14} strokeWidth={2} className="text-white" />
       </div>
+
       <h4 className="font-heading text-[20px] font-bold text-gray-900">
         {title}
       </h4>
@@ -222,19 +275,31 @@ function SectionHeader({
   );
 }
 
-function SuccessState({ name, onReset }: { name: string; onReset: () => void }) {
+function SuccessState({
+  name,
+  onReset,
+}: {
+  name: string;
+  onReset: () => void;
+}) {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-8 py-20 text-center">
       <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
         <CheckCircle size={32} strokeWidth={1.5} className="text-primary" />
       </div>
+
       <h2 className="font-heading mb-4 text-[36px] font-bold text-gray-900">
         Registration Received!
       </h2>
+
       <p className="mb-8 max-w-[400px] text-[15px] leading-relaxed text-gray-500">
-        Thank you, <strong className="text-gray-900">{name || "valued client"}</strong>.
-        Our team will review your property and be in touch within 24 hours.
+        Thank you,{" "}
+        <strong className="text-gray-900">
+          {name || "valued client"}
+        </strong>
+        . Our team will review your property and be in touch within 24 hours.
       </p>
+
       <button
         onClick={onReset}
         className="inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5
@@ -262,26 +327,35 @@ export function SellPropertyForm() {
     setForm((f) => ({ ...f, phone: sanitizePhone(e.target.value) }));
 
   const setPrice = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, askingPrice: sanitizePrice(e.target.value) }));
+    setForm((f) => ({
+      ...f,
+      askingPrice: sanitizePrice(e.target.value),
+    }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
     setError(null);
 
-    /* ─── ZOD VALIDATION ─── */
     const result = formSchema.safeParse(form);
 
     if (!result.success) {
       const firstError = result.error.errors[0]?.message;
+
       setError(firstError || "Please fill all required fields correctly.");
+
+      toast.error(firstError || "Validation failed");
+
       setLoading(false);
       return;
     }
 
-    // Extra: if hasIssues === "yes", explanation must not be empty
     if (form.hasIssues === "yes" && !form.issuesExplanation?.trim()) {
       setError("Please describe the property issues.");
+
+      toast.error("Please describe the property issues.");
+
       setLoading(false);
       return;
     }
@@ -289,7 +363,9 @@ export function SellPropertyForm() {
     try {
       const res = await fetch("/api/sell-property", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(form),
       });
 
@@ -297,19 +373,26 @@ export function SellPropertyForm() {
 
       if (!json.success) {
         setError(json.message || "Something went wrong. Please try again.");
+
+        toast.error(json.message || "Something went wrong.");
+
         setLoading(false);
         return;
       }
 
+      toast.success("Form submitted successfully!");
+
       setSubmitted(true);
     } catch {
       setError("Network error. Please check your connection.");
+
+      toast.error("Network error. Please check your connection.");
     }
 
     setLoading(false);
   };
 
-  if (submitted)
+  if (submitted) {
     return (
       <SuccessState
         name={form.fullName}
@@ -319,6 +402,7 @@ export function SellPropertyForm() {
         }}
       />
     );
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-8 py-14 lg:px-12 lg:py-16">
@@ -328,12 +412,14 @@ export function SellPropertyForm() {
             <h3 className="font-heading font-black uppercase tracking-wide text-primary">
               Official Form
             </h3>
+
             <p className="mt-1 text-gray-500">List Your Property</p>
           </div>
 
           {/* Section 1 */}
           <div className="mb-8">
             <SectionHeader icon={User} title="Owner Information" />
+
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <InputField
@@ -343,15 +429,13 @@ export function SellPropertyForm() {
                   placeholder="Jean Paul Nkurunziza"
                   value={form.fullName}
                   onChange={set("fullName")}
-                  onKeyDown={(e) => {
-                    if (/^[0-9]$/.test(e.key)) e.preventDefault();
-                  }}
                 />
+
                 <InputField
                   icon={Phone}
                   label="Phone Number"
                   required
-                  placeholder="+250 788 123 456"
+                  placeholder="+250 787 861 400"
                   value={form.phone}
                   onChange={setPhone}
                   onKeyDown={blockNonDigitKeys}
@@ -371,6 +455,7 @@ export function SellPropertyForm() {
                   onChange={set("email")}
                   type="email"
                 />
+
                 <InputField
                   icon={User}
                   label="ID / Passport No"
@@ -378,14 +463,6 @@ export function SellPropertyForm() {
                   placeholder="1 1990 8 0012345 1 23"
                   value={form.idNumber}
                   onChange={set("idNumber")}
-                  onKeyDown={(e) => {
-                    const allowed = [
-                      "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
-                      "Home", "End", " ", "-",
-                    ];
-                    if (allowed.includes(e.key)) return;
-                    if (!/^[0-9A-Za-z]$/.test(e.key)) e.preventDefault();
-                  }}
                 />
               </div>
 
@@ -405,9 +482,11 @@ export function SellPropertyForm() {
           {/* Section 2 */}
           <div className="mb-8">
             <SectionHeader icon={Home} title="Property Details" />
+
             <div className="flex flex-col gap-4">
               <div>
                 <Label text="Type of Property" required />
+
                 <div className="flex gap-3 flex-wrap">
                   {["House", "Land"].map((t) => (
                     <RadioCard
@@ -415,7 +494,10 @@ export function SellPropertyForm() {
                       label={t}
                       checked={form.propertyType === t}
                       onChange={() =>
-                        setForm((f) => ({ ...f, propertyType: t }))
+                        setForm((f) => ({
+                          ...f,
+                          propertyType: t,
+                        }))
                       }
                     />
                   ))}
@@ -431,6 +513,7 @@ export function SellPropertyForm() {
                   value={form.location}
                   onChange={set("location")}
                 />
+
                 <InputField
                   icon={Home}
                   label="Property Size (m²/sqft)"
@@ -454,7 +537,11 @@ export function SellPropertyForm() {
               />
 
               <div>
-                <Label text="Are all required documents available?" required />
+                <Label
+                  text="Are all required documents available?"
+                  required
+                />
+
                 <div className="flex gap-3 flex-wrap">
                   {[
                     { value: "yes", label: "Yes — All Ready" },
@@ -481,10 +568,18 @@ export function SellPropertyForm() {
 
           {/* Section 3 */}
           <div className="mb-10">
-            <SectionHeader icon={AlertCircle} title="Additional Information" />
+            <SectionHeader
+              icon={AlertCircle}
+              title="Additional Information"
+            />
+
             <div className="flex flex-col gap-4">
               <div>
-                <Label text="Does the property have any issues?" required />
+                <Label
+                  text="Does the property have any issues?"
+                  required
+                />
+
                 <div className="flex gap-3 flex-wrap">
                   {[
                     { value: "yes", label: "Yes" },
@@ -495,7 +590,10 @@ export function SellPropertyForm() {
                       label={o.label}
                       checked={form.hasIssues === o.value}
                       onChange={() =>
-                        setForm((f) => ({ ...f, hasIssues: o.value }))
+                        setForm((f) => ({
+                          ...f,
+                          hasIssues: o.value,
+                        }))
                       }
                     />
                   ))}
@@ -505,6 +603,7 @@ export function SellPropertyForm() {
               {form.hasIssues === "yes" && (
                 <div>
                   <Label text="Please explain" required />
+
                   <textarea
                     rows={4}
                     value={form.issuesExplanation}
@@ -535,6 +634,7 @@ export function SellPropertyForm() {
                        disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Send size={16} strokeWidth={2} />
+
             {loading ? "Submitting..." : "Submit Registration"}
           </button>
         </form>
@@ -545,17 +645,28 @@ export function SellPropertyForm() {
             <h4 className="font-heading mb-5 text-[20px] font-bold text-gray-900">
               What to Expect
             </h4>
+
             <div className="flex flex-col gap-4">
               {[
                 { step: "01", text: "Submit your registration form" },
-                { step: "02", text: "Our team reviews your property within 24 hrs" },
-                { step: "03", text: "We contact you to verify documents" },
-                { step: "04", text: "Your property goes live on our listings" },
+                {
+                  step: "02",
+                  text: "Our team reviews your property within 24 hrs",
+                },
+                {
+                  step: "03",
+                  text: "We contact you to verify documents",
+                },
+                {
+                  step: "04",
+                  text: "Your property goes live on our listings",
+                },
               ].map(({ step, text }) => (
                 <div key={step} className="flex items-start gap-3.5">
                   <span className="font-heading w-8 shrink-0 text-[26px] font-bold leading-none text-gray-200">
                     {step}
                   </span>
+
                   <p className="m-0 pt-1 text-[13px] leading-relaxed text-gray-500">
                     {text}
                   </p>
@@ -568,6 +679,7 @@ export function SellPropertyForm() {
             <h4 className="font-heading mb-2 text-[20px] font-bold text-white">
               Need Help?
             </h4>
+
             <p className="mb-5 text-[13px] leading-relaxed text-white/65">
               Call us directly with any questions about listing your property.
             </p>
@@ -576,7 +688,7 @@ export function SellPropertyForm() {
               href="tel:+250788123456"
               className="mb-3 flex items-center gap-2.5 text-[13px] font-semibold text-white no-underline hover:text-white/80 transition-colors"
             >
-              <Phone size={14} strokeWidth={2} /> +250 788 123 456
+              <Phone size={14} strokeWidth={2} /> +250 787 861 400
             </a>
 
             <a
