@@ -1,20 +1,18 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
+import { z } from "zod";
 import {
   User,
   Phone,
   Mail,
   MapPin,
   Home,
-  FileText,
-  Upload,
   AlertCircle,
   CheckCircle,
   Send,
 } from "lucide-react";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface FormState {
   fullName: string;
@@ -27,12 +25,56 @@ interface FormState {
   propertySize: string;
   askingPrice: string;
   documentsAvailable: string;
-  documentTypes: string;
-  propertyFile: File | null;
-  propertyFileName: string;
   hasIssues: string;
   issuesExplanation: string;
 }
+
+/* ─── VALIDATION SCHEMA ─── */
+const formSchema = z.object({
+  fullName: z
+    .string()
+    .min(2, "Full name must be at least 2 characters")
+    .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, "Name must contain only letters"),
+
+  phone: z
+    .string()
+    .min(8, "Phone number is too short")
+    .max(20, "Phone number is too long")
+    .regex(/^\+?[0-9\s]+$/, "Phone must contain only digits (and optional leading +)"),
+
+  email: z
+    .string()
+    .email("Please enter a valid email address"),
+
+  address: z
+    .string()
+    .min(5, "Address must be at least 5 characters"),
+
+  idNumber: z
+    .string()
+    .min(3, "ID / Passport number is required")
+    .regex(/^[0-9A-Za-z\s-]+$/, "ID must contain only letters, numbers, spaces or dashes"),
+
+  propertyType: z.string().min(1, "Please select a property type"),
+
+  location: z.string().min(2, "Property location is required"),
+
+  propertySize: z
+    .string()
+    .min(1, "Property size is required")
+    .regex(/^[0-9]+(\.[0-9]+)?\s*(m²|sqft|m2)?$/, "Enter a valid size (e.g. 500 or 500 m²)"),
+
+  askingPrice: z
+    .string()
+    .min(1, "Asking price is required")
+    .regex(/^[0-9,]+$/, "Price must contain only numbers"),
+
+  documentsAvailable: z.string().min(1, "Please select document status"),
+
+  hasIssues: z.string().min(1, "Please indicate if the property has issues"),
+
+  issuesExplanation: z.string().optional(),
+});
 
 const defaultForm: FormState = {
   fullName: "",
@@ -45,14 +87,48 @@ const defaultForm: FormState = {
   propertySize: "",
   askingPrice: "",
   documentsAvailable: "",
-  documentTypes: "",
-  propertyFile: null,
-  propertyFileName: "",
   hasIssues: "",
   issuesExplanation: "",
 };
 
-// ─── Reusable Field Components ───────────────────────────────────────────────
+/* ─── HELPERS ─── */
+
+function sanitizePhone(value: string): string {
+  return value.replace(/[^0-9+\s]/g, "").replace(/(?!^)\+/g, "");
+}
+
+function sanitizePrice(value: string): string {
+  return value.replace(/[^0-9,]/g, "");
+}
+
+function blockNonDigitKeys(e: React.KeyboardEvent<HTMLInputElement>) {
+  const allowed = [
+    "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
+    "Home", "End", " ",
+  ];
+  if (allowed.includes(e.key)) return;
+  if (e.key === "+" && (e.currentTarget.selectionStart ?? 0) === 0) return;
+  if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+}
+
+function blockNonPriceKeys(e: React.KeyboardEvent<HTMLInputElement>) {
+  const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End", ","];
+  if (allowed.includes(e.key)) return;
+  if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+}
+
+function blockNonSizeKeys(e: React.KeyboardEvent<HTMLInputElement>) {
+  // Allow digits, dot, space, letters for units (m, ², s, q, f, t)
+  const allowed = [
+    "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
+    "Home", "End", " ", ".", "²",
+  ];
+  if (allowed.includes(e.key)) return;
+  if (/^[0-9a-zA-Z²]$/.test(e.key)) return;
+  e.preventDefault();
+}
+
+/* ─── COMPONENTS ─── */
 
 function Label({ text, required }: { text: string; required?: boolean }) {
   return (
@@ -127,49 +203,6 @@ function RadioCard({
   );
 }
 
-function FileUpload({
-  label,
-  required,
-  fileName,
-  onChange,
-}: {
-  label: string;
-  required?: boolean;
-  fileName: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
-  return (
-    <div>
-      <Label text={label} required={required} />
-      <label
-        className={[
-          "flex cursor-pointer items-center gap-3 rounded-xl border-[1.5px] border-dashed px-4 py-3.5 transition-all duration-200",
-          fileName
-            ? "border-primary bg-primary/5"
-            : "border-gray-200 bg-gray-50 hover:border-gray-300",
-        ].join(" ")}
-      >
-        <Upload
-          size={15}
-          strokeWidth={1.8}
-          className={fileName ? "text-primary" : "text-gray-300"}
-        />
-        <span
-          className={`text-[13px] ${fileName ? "text-primary" : "text-gray-400"}`}
-        >
-          {fileName || "Click to upload (PDF, JPG, PNG)"}
-        </span>
-        <input
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          className="hidden"
-          onChange={onChange}
-        />
-      </label>
-    </div>
-  );
-}
-
 function SectionHeader({
   icon: Icon,
   title,
@@ -189,15 +222,7 @@ function SectionHeader({
   );
 }
 
-// ─── Success State ────────────────────────────────────────────────────────────
-
-function SuccessState({
-  name,
-  onReset,
-}: {
-  name: string;
-  onReset: () => void;
-}) {
+function SuccessState({ name, onReset }: { name: string; onReset: () => void }) {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-8 py-20 text-center">
       <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -207,8 +232,7 @@ function SuccessState({
         Registration Received!
       </h2>
       <p className="mb-8 max-w-[400px] text-[15px] leading-relaxed text-gray-500">
-        Thank you,{" "}
-        <strong className="text-gray-900">{name || "valued client"}</strong>.
+        Thank you, <strong className="text-gray-900">{name || "valued client"}</strong>.
         Our team will review your property and be in touch within 24 hours.
       </p>
       <button
@@ -223,53 +247,91 @@ function SuccessState({
   );
 }
 
-// ─── Main Form ────────────────────────────────────────────────────────────────
-
 export function SellPropertyForm() {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const set =
     (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file)
-      setForm((f) => ({
-        ...f,
-        propertyFile: file,
-        propertyFileName: file.name,
-      }));
-  };
+  const setPhone = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, phone: sanitizePhone(e.target.value) }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const setPrice = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, askingPrice: sanitizePrice(e.target.value) }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+
+    /* ─── ZOD VALIDATION ─── */
+    const result = formSchema.safeParse(form);
+
+    if (!result.success) {
+      const firstError = result.error.errors[0]?.message;
+      setError(firstError || "Please fill all required fields correctly.");
+      setLoading(false);
+      return;
+    }
+
+    // Extra: if hasIssues === "yes", explanation must not be empty
+    if (form.hasIssues === "yes" && !form.issuesExplanation?.trim()) {
+      setError("Please describe the property issues.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/sell-property", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const json = await res.json();
+
+      if (!json.success) {
+        setError(json.message || "Something went wrong. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      setSubmitted(true);
+    } catch {
+      setError("Network error. Please check your connection.");
+    }
+
+    setLoading(false);
   };
 
   if (submitted)
     return (
-      <SuccessState name={form.fullName} onReset={() => setSubmitted(false)} />
+      <SuccessState
+        name={form.fullName}
+        onReset={() => {
+          setForm(defaultForm);
+          setSubmitted(false);
+        }}
+      />
     );
 
   return (
     <section className="mx-auto max-w-7xl px-8 py-14 lg:px-12 lg:py-16">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_300px] lg:items-start">
-        {/* ── FORM ── */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-0">
-          {/* Form header */}
-          <div className="mb-10 flex items-start justify-between">
-            <div className="mb-8">
-            <h3 className="font-heading  font-black uppercase tracking-wide text-primary">
+          <div className="mb-10">
+            <h3 className="font-heading font-black uppercase tracking-wide text-primary">
               Official Form
             </h3>
             <p className="mt-1 text-gray-500">List Your Property</p>
           </div>
-          </div>
 
-          {/* ── SECTION 1: Owner ── */}
+          {/* Section 1 */}
           <div className="mb-8">
             <SectionHeader icon={User} title="Owner Information" />
             <div className="flex flex-col gap-4">
@@ -281,6 +343,9 @@ export function SellPropertyForm() {
                   placeholder="Jean Paul Nkurunziza"
                   value={form.fullName}
                   onChange={set("fullName")}
+                  onKeyDown={(e) => {
+                    if (/^[0-9]$/.test(e.key)) e.preventDefault();
+                  }}
                 />
                 <InputField
                   icon={Phone}
@@ -288,10 +353,14 @@ export function SellPropertyForm() {
                   required
                   placeholder="+250 788 123 456"
                   value={form.phone}
-                  onChange={set("phone")}
+                  onChange={setPhone}
+                  onKeyDown={blockNonDigitKeys}
                   type="tel"
+                  inputMode="numeric"
+                  maxLength={20}
                 />
               </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <InputField
                   icon={Mail}
@@ -309,8 +378,17 @@ export function SellPropertyForm() {
                   placeholder="1 1990 8 0012345 1 23"
                   value={form.idNumber}
                   onChange={set("idNumber")}
+                  onKeyDown={(e) => {
+                    const allowed = [
+                      "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
+                      "Home", "End", " ", "-",
+                    ];
+                    if (allowed.includes(e.key)) return;
+                    if (!/^[0-9A-Za-z]$/.test(e.key)) e.preventDefault();
+                  }}
                 />
               </div>
+
               <InputField
                 icon={MapPin}
                 label="Residential Address"
@@ -324,11 +402,10 @@ export function SellPropertyForm() {
 
           <div className="mb-8 h-px bg-gray-100" />
 
-          {/* ── SECTION 2: Property ── */}
+          {/* Section 2 */}
           <div className="mb-8">
             <SectionHeader icon={Home} title="Property Details" />
             <div className="flex flex-col gap-4">
-              {/* Type */}
               <div>
                 <Label text="Type of Property" required />
                 <div className="flex gap-3 flex-wrap">
@@ -361,6 +438,7 @@ export function SellPropertyForm() {
                   placeholder="e.g. 500 m²"
                   value={form.propertySize}
                   onChange={set("propertySize")}
+                  onKeyDown={blockNonSizeKeys}
                 />
               </div>
 
@@ -370,10 +448,11 @@ export function SellPropertyForm() {
                 required
                 placeholder="e.g. 320,000,000"
                 value={form.askingPrice}
-                onChange={set("askingPrice")}
+                onChange={setPrice}
+                onKeyDown={blockNonPriceKeys}
+                inputMode="numeric"
               />
 
-              {/* Documents available */}
               <div>
                 <Label text="Are all required documents available?" required />
                 <div className="flex gap-3 flex-wrap">
@@ -386,7 +465,10 @@ export function SellPropertyForm() {
                       label={o.label}
                       checked={form.documentsAvailable === o.value}
                       onChange={() =>
-                        setForm((f) => ({ ...f, documentsAvailable: o.value }))
+                        setForm((f) => ({
+                          ...f,
+                          documentsAvailable: o.value,
+                        }))
                       }
                     />
                   ))}
@@ -397,7 +479,7 @@ export function SellPropertyForm() {
 
           <div className="mb-8 h-px bg-gray-100" />
 
-          {/* ── SECTION 3: Additional ── */}
+          {/* Section 3 */}
           <div className="mb-10">
             <SectionHeader icon={AlertCircle} title="Additional Information" />
             <div className="flex flex-col gap-4">
@@ -437,23 +519,28 @@ export function SellPropertyForm() {
             </div>
           </div>
 
-          {/* Submit */}
+          {error && (
+            <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 border border-red-100">
+              {error}
+            </p>
+          )}
+
           <button
             type="submit"
+            disabled={loading}
             className="flex w-full items-center justify-center gap-2.5 rounded-full bg-primary py-4
                        text-[14px] font-semibold text-white border-0 cursor-pointer
                        shadow-[0_4px_20px_rgba(122,34,64,0.25)]
-                       transition-all duration-200 hover:bg-primary/90 hover:shadow-[0_8px_28px_rgba(122,34,64,0.35)]
-                       hover:-translate-y-px"
+                       transition-all duration-200 hover:bg-primary/90 hover:-translate-y-px
+                       disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Send size={16} strokeWidth={2} />
-            Submit Registration
+            {loading ? "Submitting..." : "Submit Registration"}
           </button>
         </form>
 
-        {/* ── RIGHT SIDEBAR ── */}
+        {/* Sidebar */}
         <aside className="flex flex-col gap-5 lg:sticky lg:top-28">
-          {/* What to expect */}
           <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
             <h4 className="font-heading mb-5 text-[20px] font-bold text-gray-900">
               What to Expect
@@ -461,10 +548,7 @@ export function SellPropertyForm() {
             <div className="flex flex-col gap-4">
               {[
                 { step: "01", text: "Submit your registration form" },
-                {
-                  step: "02",
-                  text: "Our team reviews your property within 24 hrs",
-                },
+                { step: "02", text: "Our team reviews your property within 24 hrs" },
                 { step: "03", text: "We contact you to verify documents" },
                 { step: "04", text: "Your property goes live on our listings" },
               ].map(({ step, text }) => (
@@ -480,7 +564,6 @@ export function SellPropertyForm() {
             </div>
           </div>
 
-          {/* Need Help */}
           <div className="rounded-2xl bg-primary p-6">
             <h4 className="font-heading mb-2 text-[20px] font-bold text-white">
               Need Help?
@@ -488,12 +571,14 @@ export function SellPropertyForm() {
             <p className="mb-5 text-[13px] leading-relaxed text-white/65">
               Call us directly with any questions about listing your property.
             </p>
+
             <a
               href="tel:+250788123456"
               className="mb-3 flex items-center gap-2.5 text-[13px] font-semibold text-white no-underline hover:text-white/80 transition-colors"
             >
               <Phone size={14} strokeWidth={2} /> +250 788 123 456
             </a>
+
             <a
               href="mailto:info@karisimbirealestate.com"
               className="flex items-center gap-2.5 text-[12.5px] text-white/60 no-underline hover:text-white/80 transition-colors"

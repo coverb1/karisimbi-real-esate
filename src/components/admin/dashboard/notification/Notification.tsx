@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, type ElementType } from "react";
 import {
   Bell,
   Mail,
-  Wrench,
   MapPin,
   SlidersHorizontal,
   CheckCheck,
@@ -15,164 +14,24 @@ import {
   ArrowLeft,
   Building2,
 } from "lucide-react";
+import {
+  useNotifications,
+  type NotifType,
+  type UnifiedNotification,
+} from "@/src/hooks/use-notifications";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type NotifType = "maintenance" | "contact" | "inquiry" | "viewing";
-
-interface Notification {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  message: string;
-  type: NotifType;
+interface Notification extends UnifiedNotification {
   time: string;
   submittedAt: string;
   group: "today" | "yesterday" | "older";
-  unread: boolean;
   property?: string;
-  location?: string;
-  beds?: number;
-  baths?: number;
   price?: string;
 }
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const NOTIFICATIONS: Notification[] = [
-  {
-    id: 1,
-    name: "Jean Pierre K.",
-    email: "jeanpierre.k@gmail.com",
-    phone: "+250 788 123 456",
-    message: "I am interested in scheduling a viewing this weekend. Is Saturday morning available?",
-    type: "viewing",
-    time: "1h ago",
-    submittedAt: "22 May 2026, 09:14 AM",
-    group: "today",
-    unread: true,
-    property: "Hilltop Panorama Estate",
-    location: "Rebero",
-    beds: 6,
-    baths: 5,
-    price: "RWF 580,000,000",
-  },
-  {
-    id: 2,
-    name: "Alice Uwimana",
-    email: "alice.u@email.com",
-    phone: "+250 722 987 654",
-    message: "Is the City Centre Apartment still available? I would love to arrange a visit.",
-    type: "contact",
-    time: "3h ago",
-    submittedAt: "22 May 2026, 07:30 AM",
-    group: "today",
-    unread: true,
-    property: "City Centre Apartment",
-    location: "Kigali CBD",
-    beds: 2,
-    baths: 1,
-    price: "RWF 95,000,000",
-  },
-  {
-    id: 3,
-    name: "Samuel Nkusi",
-    email: "samuel.nkusi@outlook.com",
-    message: "I would like to negotiate the price on the villa. Can we discuss further?",
-    type: "inquiry",
-    time: "5h ago",
-    submittedAt: "22 May 2026, 05:00 AM",
-    group: "today",
-    unread: true,
-    property: "Modern Luxury Villa",
-    location: "Kigali Heights",
-    beds: 5,
-    baths: 4,
-    price: "RWF 450,000,000",
-  },
-  {
-    id: 4,
-    name: "Marie Claire",
-    email: "m.claire@yahoo.com",
-    phone: "+250 733 456 789",
-    message: "The gate latch at the front entrance is broken and needs urgent repair.",
-    type: "maintenance",
-    time: "1d ago",
-    submittedAt: "21 May 2026, 02:15 PM",
-    group: "yesterday",
-    unread: false,
-    property: "Garden View Residence",
-    location: "Kimihurura",
-  },
-  {
-    id: 5,
-    name: "Emmanuel Habimana",
-    email: "e.habimana@gmail.com",
-    message: "How many parking spaces are included with the penthouse purchase?",
-    type: "inquiry",
-    time: "1d ago",
-    submittedAt: "21 May 2026, 10:45 AM",
-    group: "yesterday",
-    unread: false,
-    property: "Executive Penthouse",
-    location: "Gacuriro",
-    beds: 3,
-    baths: 3,
-    price: "RWF 280,000,000",
-  },
-  {
-    id: 6,
-    name: "Diane Ingabire",
-    email: "diane.i@gmail.com",
-    phone: "+250 788 654 321",
-    message: "I am looking for a 4-bedroom family house in Nyarutarama. Do you have any listings?",
-    type: "contact",
-    time: "2d ago",
-    submittedAt: "20 May 2026, 04:00 PM",
-    group: "yesterday",
-    unread: false,
-    location: "Nyarutarama",
-  },
-  {
-    id: 7,
-    name: "Patrick Mugisha",
-    email: "p.mugisha@hotmail.com",
-    phone: "+250 722 111 222",
-    message: "The water heater in the master bathroom stopped working. Please send a technician.",
-    type: "maintenance",
-    time: "3d ago",
-    submittedAt: "19 May 2026, 08:30 AM",
-    group: "older",
-    unread: false,
-    property: "Lakeside Retreat",
-    location: "Nyamata",
-  },
-  {
-    id: 8,
-    name: "Grace Mutesi",
-    email: "grace.mutesi@gmail.com",
-    phone: "+250 788 333 444",
-    message: "I would like a private tour of the mansion this weekend. Please confirm availability.",
-    type: "viewing",
-    time: "4d ago",
-    submittedAt: "18 May 2026, 11:00 AM",
-    group: "older",
-    unread: false,
-    property: "Diplomatic Quarter Mansion",
-    location: "Kacyiru",
-    beds: 7,
-    baths: 6,
-    price: "RWF 890,000,000",
-  },
-];
-
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const TYPE_CONFIG: Record<
   NotifType,
   {
-    icon: React.ElementType;
+    icon: ElementType;
     iconColor: string;
     iconBg: string;
     badgeBg: string;
@@ -180,37 +39,21 @@ const TYPE_CONFIG: Record<
     label: string;
   }
 > = {
-  viewing: {
+  "property-visit": {
     icon: Eye,
     iconColor: "text-[#770634]",
     iconBg: "bg-[#f9f0f3]",
     badgeBg: "bg-[#f9f0f3]",
     badgeText: "text-[#770634]",
-    label: "Viewing Request",
+    label: "Property Visit",
   },
-  inquiry: {
+  "sell-property": {
     icon: FileText,
     iconColor: "text-[#92600a]",
     iconBg: "bg-[#fef3e2]",
     badgeBg: "bg-[#fef3e2]",
     badgeText: "text-[#92600a]",
-    label: "Inquiry",
-  },
-  contact: {
-    icon: Mail,
-    iconColor: "text-[#185FA5]",
-    iconBg: "bg-[#e6f1fb]",
-    badgeBg: "bg-[#e6f1fb]",
-    badgeText: "text-[#185FA5]",
-    label: "Contact",
-  },
-  maintenance: {
-    icon: Wrench,
-    iconColor: "text-[#1a5c2a]",
-    iconBg: "bg-[#f0f7f1]",
-    badgeBg: "bg-[#f0f7f1]",
-    badgeText: "text-[#1a5c2a]",
-    label: "Maintenance",
+    label: "Sell Property",
   },
 };
 
@@ -218,10 +61,8 @@ type FilterTab = "all" | NotifType;
 
 const TABS: { key: FilterTab; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "viewing", label: "Viewing" },
-  { key: "inquiry", label: "Inquiry" },
-  { key: "contact", label: "Contact" },
-  { key: "maintenance", label: "Maintenance" },
+  { key: "sell-property", label: "Sell Property" },
+  { key: "property-visit", label: "Property Visit" },
 ];
 
 const GROUP_LABELS = {
@@ -230,7 +71,79 @@ const GROUP_LABELS = {
   older: "Older",
 } as const;
 
-// ─── Detail Panel ─────────────────────────────────────────────────────────────
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getGroup(dateValue: string): Notification["group"] {
+  const submitted = startOfDay(new Date(dateValue));
+  const today = startOfDay(new Date());
+  const diffDays = Math.floor(
+    (today.getTime() - submitted.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  return "older";
+}
+
+function formatRelativeTime(dateValue: string) {
+  const diffMs = Date.now() - new Date(dateValue).getTime();
+  const diffMinutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function formatSubmittedAt(dateValue: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(dateValue));
+}
+
+function formatPrice(value?: string | null) {
+  if (!value) return undefined;
+  return value.toLowerCase().startsWith("rwf") ? value : `RWF ${value}`;
+}
+
+function normalizeNotification(notif: UnifiedNotification): Notification {
+  if (notif.type === "sell-property") {
+    return {
+      ...notif,
+      time: formatRelativeTime(notif.created_at),
+      submittedAt: formatSubmittedAt(notif.created_at),
+      group: getGroup(notif.created_at),
+      property: notif.property_type
+        ? `${notif.property_type} for sale`
+        : "Property sale request",
+      location: notif.location,
+      price: formatPrice(notif.asking_price),
+    };
+  }
+
+  return {
+    ...notif,
+    time: formatRelativeTime(notif.created_at),
+    submittedAt: formatSubmittedAt(notif.created_at),
+    group: getGroup(notif.created_at),
+    property: notif.property_type
+      ? `${notif.property_type} visit`
+      : "Property visit request",
+    location: notif.property_location,
+    price: formatPrice(notif.property_price),
+  };
+}
 
 function DetailPanel({
   notif,
@@ -244,7 +157,6 @@ function DetailPanel({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Panel header */}
       <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
         <button
           onClick={onClose}
@@ -264,13 +176,14 @@ function DetailPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {/* Sender info */}
         <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-2.5">
           <p className="landing-eyebrow text-gray-400 mb-3">Sender Details</p>
-          <div className="flex items-center gap-2.5 text-sm text-gray-700">
-            <Mail size={13} className="shrink-0 text-gray-400" />
-            <span>{notif.email}</span>
-          </div>
+          {notif.email && (
+            <div className="flex items-center gap-2.5 text-sm text-gray-700">
+              <Mail size={13} className="shrink-0 text-gray-400" />
+              <span>{notif.email}</span>
+            </div>
+          )}
           {notif.phone && (
             <div className="flex items-center gap-2.5 text-sm text-gray-700">
               <Phone size={13} className="shrink-0 text-gray-400" />
@@ -283,13 +196,11 @@ function DetailPanel({
           </div>
         </div>
 
-        {/* Message */}
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <p className="landing-eyebrow text-gray-400 mb-3">Message</p>
           <p className="text-sm text-gray-700 leading-relaxed">{notif.message}</p>
         </div>
 
-        {/* Property details — only if linked */}
         {notif.property && (
           <div className="rounded-xl border border-gray-100 bg-white p-4">
             <p className="landing-eyebrow text-gray-400 mb-3">Property</p>
@@ -308,47 +219,48 @@ function DetailPanel({
                 {notif.price && (
                   <p className="mt-1.5 text-sm font-bold text-[#770634]">{notif.price}</p>
                 )}
-                {(notif.beds || notif.baths) && (
-                  <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-                    {notif.beds && <span>{notif.beds} beds</span>}
-                    {notif.baths && <span>{notif.baths} baths</span>}
-                  </div>
-                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Action buttons */}
-      <div className="border-t border-gray-100 px-5 py-4 flex gap-3">
-        <a
-          href={`mailto:${notif.email}`}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#770634] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#8f0740] transition-colors"
-        >
-          <Mail size={14} />
-          Email customer
-        </a>
-        {notif.phone && (
-          <a
-            href={`tel:${notif.phone}`}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Phone size={14} />
-            Call customer
-          </a>
-        )}
-      </div>
+      {(notif.email || notif.phone) && (
+        <div className="border-t border-gray-100 px-5 py-4 flex gap-3">
+          {notif.email && (
+            <a
+              href={`mailto:${notif.email}`}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#770634] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#8f0740] transition-colors"
+            >
+              <Mail size={14} />
+              Email customer
+            </a>
+          )}
+          {notif.phone && (
+            <a
+              href={`tel:${notif.phone}`}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Phone size={14} />
+              Call customer
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
-  const [items, setItems] = useState<Notification[]>(NOTIFICATIONS);
   const [selected, setSelected] = useState<Notification | null>(null);
+  const { notifications, loading, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
+
+  const items = useMemo(
+    () => notifications.map(normalizeNotification),
+    [notifications]
+  );
 
   const filtered =
     activeTab === "all" ? items : items.filter((n) => n.type === activeTab);
@@ -358,16 +270,16 @@ export default function NotificationsPage() {
       ? items.length
       : items.filter((n) => n.type === type).length;
 
-  const unreadCount = items.filter((n) => n.unread).length;
-
-  const markAllRead = () =>
-    setItems((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const markAllRead = () => {
+    markAllAsRead();
+    setSelected((prev) => (prev ? { ...prev, unread: false } : prev));
+  };
 
   const handleSelect = (notif: Notification) => {
-    setSelected(notif);
-    setItems((prev) =>
-      prev.map((n) => (n.id === notif.id ? { ...n, unread: false } : n))
-    );
+    setSelected({ ...notif, unread: false });
+    if (notif.unread) {
+      markAsRead(notif.id, notif.type);
+    }
   };
 
   const groups: ("today" | "yesterday" | "older")[] = [
@@ -379,16 +291,13 @@ export default function NotificationsPage() {
   return (
     <div className="admin-shell min-h-screen bg-[#f8f8f8] p-6">
       <div className="flex gap-5 items-start">
-
-        {/* ── Left: List panel ── */}
         <div className="flex-1 min-w-0">
-          {/* Page Header */}
           <div className="mb-6 flex items-start justify-between">
             <div>
               <p className="landing-eyebrow text-primary">System</p>
               <h1 className="landing-title-compact mt-1 text-gray-900">Notifications</h1>
               <p className="mt-1 text-sm text-gray-500">
-                {items.length} total&nbsp;&nbsp;·&nbsp;&nbsp;
+                {items.length} total&nbsp;&nbsp;-&nbsp;&nbsp;
                 {unreadCount > 0 ? (
                   <span className="font-semibold text-[#770634]">{unreadCount} unread</span>
                 ) : (
@@ -413,7 +322,6 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Filter Tabs */}
           <div className="mb-5 flex w-fit gap-1 rounded-xl border border-gray-200 bg-white p-1.5">
             {TABS.map((tab) => (
               <button
@@ -439,7 +347,6 @@ export default function NotificationsPage() {
             ))}
           </div>
 
-          {/* Notification Groups */}
           <div className="flex flex-col gap-3">
             {groups.map((group) => {
               const groupItems = filtered.filter((n) => n.group === group);
@@ -457,11 +364,12 @@ export default function NotificationsPage() {
                     {groupItems.map((notif) => {
                       const cfg = TYPE_CONFIG[notif.type];
                       const Icon = cfg.icon;
-                      const isActive = selected?.id === notif.id;
+                      const isActive =
+                        selected?.id === notif.id && selected?.type === notif.type;
 
                       return (
                         <div
-                          key={notif.id}
+                          key={`${notif.type}-${notif.id}`}
                           onClick={() => handleSelect(notif)}
                           className={`relative flex cursor-pointer items-start gap-4 rounded-xl border px-4 py-3.5 transition-all ${
                             isActive
@@ -484,7 +392,9 @@ export default function NotificationsPage() {
                               <span className="font-semibold text-gray-900 text-sm">{notif.name}</span>
                               <span className="shrink-0 text-xs text-gray-400">{notif.time}</span>
                             </div>
-                            <p className="text-xs text-gray-400 mb-1">{notif.email}</p>
+                            {notif.email && (
+                              <p className="text-xs text-gray-400 mb-1">{notif.email}</p>
+                            )}
                             <p className="truncate text-sm text-gray-500 mb-2">{notif.message}</p>
                             <div className="flex flex-wrap items-center gap-2">
                               <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${cfg.badgeBg} ${cfg.badgeText}`}>
@@ -512,21 +422,23 @@ export default function NotificationsPage() {
                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
                   <Bell size={20} className="text-gray-400" />
                 </div>
-                <p className="font-semibold text-gray-700">No notifications</p>
-                <p className="mt-1 text-sm text-gray-400">Nothing here for this filter yet.</p>
+                <p className="font-semibold text-gray-700">
+                  {loading ? "Loading notifications" : "No notifications"}
+                </p>
+                <p className="mt-1 text-sm text-gray-400">
+                  {loading ? "Fetching the latest submissions." : "Nothing here for this filter yet."}
+                </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Right: Detail panel ── */}
         {selected && (
           <div className="w-80 shrink-0 sticky top-6 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
             <DetailPanel notif={selected} onClose={() => setSelected(null)} />
           </div>
         )}
 
-        {/* ── Right: Empty state placeholder ── */}
         {!selected && (
           <div className="w-80 shrink-0 sticky top-6 rounded-xl border border-dashed border-gray-200 bg-white flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-gray-50">

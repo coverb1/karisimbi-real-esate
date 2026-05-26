@@ -44,7 +44,7 @@ export function AdminTopbar({ user }: { user: CurrentUser }) {
         </Link>
 
         <Link
-          href="/admin/dashboard/notifications"
+          href="/admin/dashboard/Notification"
           aria-label="Notifications"
           className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-primary/40 hover:text-primary transition-colors relative"
         >

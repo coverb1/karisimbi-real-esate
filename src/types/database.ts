@@ -1,5 +1,3 @@
-// 📁 types/database.types.ts
-
 export type UserRole = "admin" | "user";
 
 export type Json =
@@ -25,7 +23,6 @@ export type Database = {
           reset_token?: string | null;
           reset_token_expiry?: string | null;
         };
-
         Insert: {
           created_at?: string;
           email: string;
@@ -37,7 +34,6 @@ export type Database = {
           reset_token?: string | null;
           reset_token_expiry?: string | null;
         };
-
         Update: {
           created_at?: string;
           email?: string;
@@ -49,11 +45,10 @@ export type Database = {
           reset_token?: string | null;
           reset_token_expiry?: string | null;
         };
-
         Relationships: [];
       };
 
-properties: {
+      properties: {
         Row: {
           id: string;
           title: string;
@@ -98,7 +93,116 @@ properties: {
         Relationships: [];
       };
 
+      sell_property_submissions: {
+        Row: {
+          id: string;
+          full_name: string;
+          phone: string;
+          email: string;
+          address: string | null;
+          id_number: string | null;
+          property_type: string | null;
+          location: string | null;
+          property_size: string | null;
+          asking_price: string | null;
+          documents_available: string | null;
+          has_issues: string | null;
+          issues_explanation: string | null;
+          unread: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          full_name: string;
+          phone: string;
+          email: string;
+          address?: string | null;
+          id_number?: string | null;
+          property_type?: string | null;
+          location?: string | null;
+          property_size?: string | null;
+          asking_price?: string | null;
+          documents_available?: string | null;
+          has_issues?: string | null;
+          issues_explanation?: string | null;
+          unread?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          phone?: string;
+          email?: string;
+          address?: string | null;
+          id_number?: string | null;
+          property_type?: string | null;
+          location?: string | null;
+          property_size?: string | null;
+          asking_price?: string | null;
+          documents_available?: string | null;
+          has_issues?: string | null;
+          issues_explanation?: string | null;
+          unread?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
 
+      property_visit_submissions: {
+        Row: {
+          id: string;
+          full_name: string;
+          phone: string;
+          email: string | null;
+          address: string | null;
+          id_number: string | null;
+          property_type: string | null;
+          property_location: string | null;
+          property_price: string | null;
+          visit_date: string | null;
+          visit_time: string | null;
+          transportation: string | null;
+          unread: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          full_name: string;
+          phone: string;
+          email?: string | null;
+          address?: string | null;
+          id_number?: string | null;
+          property_type?: string | null;
+          property_location?: string | null;
+          property_price?: string | null;
+          visit_date?: string | null;
+          visit_time?: string | null;
+          transportation?: string | null;
+          unread?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          phone?: string;
+          email?: string | null;
+          address?: string | null;
+          id_number?: string | null;
+          property_type?: string | null;
+          property_location?: string | null;
+          property_price?: string | null;
+          visit_date?: string | null;
+          visit_time?: string | null;
+          transportation?: string | null;
+          unread?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
 
     Views: Record<string, never>;
@@ -106,7 +210,4 @@ properties: {
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
-
-
-
 };
