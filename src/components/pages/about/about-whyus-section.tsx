@@ -3,34 +3,34 @@ import { CheckCircle2, ArrowUpRight } from "lucide-react";
 
 const reasons = [
   {
-    title: "Expert Knowledge",
+    title: "Trusted Services",
     description:
-      "Deep understanding of local market trends and property values across Rwanda.",
+      "We provide transparent and reliable real estate services for every client.",
   },
   {
-    title: "Personalized Service",
+    title: "Affordable Properties",
     description:
-      "Tailored solutions that match your unique needs and preferences at every step.",
+      "Access quality homes, plots, and investment opportunities at affordable prices.",
   },
   {
-    title: "Legal Expertise",
+    title: "Professional Support",
     description:
-      "Full legal support ensuring smooth, secure, and fully compliant transactions.",
+      "Our team supports clients throughout every step of the buying and selling process.",
   },
   {
-    title: "Transparent Process",
+    title: "Secure Transactions",
     description:
-      "Clear communication and honest advice from first inquiry to final signing.",
+      "We ensure smooth and secure property transactions with proper legal guidance.",
   },
   {
-    title: "Wide Network",
+    title: "Market Experience",
     description:
-      "Access to exclusive listings and off-market opportunities across Kigali.",
+      "Experienced in Rwanda’s real estate market with strong local property knowledge.",
   },
   {
-    title: "After-Sales Support",
+    title: "Ownership Assistance",
     description:
-      "Continued assistance and guidance even after your transaction is complete.",
+      "We assist clients from the first inquiry up to ownership transfer and documentation.",
   },
 ];
 
@@ -39,20 +39,24 @@ export function AboutWhyUs() {
     <section className="bg-[#fafafa] py-20 px-8 lg:px-12">
       <div className="mx-auto max-w-300">
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-start">
-          {/* Left: sticky header */}
+          {/* Left */}
           <div className="lg:sticky lg:top-10">
             <div className="mb-8">
-              <h3 className="font-heading  font-black uppercase tracking-wide text-primary">
+              <h3 className="font-heading font-black uppercase tracking-wide text-primary">
                 Why Karisimbi
               </h3>
+
               <p className="mt-1 text-gray-500">
                 Why clients choose us
               </p>
             </div>
+
             <p className="mb-9 max-w-95 text-[15px] leading-[1.85] text-gray-500">
-              We go beyond transactions to build lasting relationships and
-              deliver exceptional value at every stage of your property journey.
+              Karisimbi Real Estate focuses on trusted services, customer
+              satisfaction, and helping clients find the right property across
+              Rwanda with confidence and security.
             </p>
+
             <Link
               href="/properties"
               className="inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5
@@ -64,7 +68,7 @@ export function AboutWhyUs() {
             </Link>
           </div>
 
-          {/* Right: reasons list */}
+          {/* Right */}
           <div className="flex flex-col">
             {reasons.map(({ title, description }) => (
               <div
@@ -76,10 +80,12 @@ export function AboutWhyUs() {
                   strokeWidth={2}
                   className="mt-0.5 shrink-0 text-primary"
                 />
+
                 <div>
                   <h4 className="mb-1.5 text-[15px] font-semibold text-gray-900">
                     {title}
                   </h4>
+
                   <p className="m-0 text-[13.5px] leading-[1.7] text-gray-500">
                     {description}
                   </p>

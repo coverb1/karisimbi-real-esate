@@ -116,7 +116,7 @@ export default function PropertyDetailPage() {
             Properties
           </Link>
 
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <button
               onClick={() => setSaved(!saved)}
               className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
@@ -128,7 +128,8 @@ export default function PropertyDetailPage() {
             <button className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:border-gray-300 hover:text-gray-600 transition-all">
               <Share2 size={15} />
             </button>
-          </div>
+          </div> */}
+
         </div>
       </div>
 
@@ -330,7 +331,7 @@ export default function PropertyDetailPage() {
               </div>
 
               {/* CTAs */}
-              <div className="pt-5 flex flex-col gap-3">
+              {/* <div className="pt-5 flex flex-col gap-3">
                 <button className="w-full flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-semibold text-white hover:opacity-90 active:scale-[0.98] transition-all">
                   <Phone size={15} />
                   Contact Agent
@@ -339,7 +340,7 @@ export default function PropertyDetailPage() {
                   <Calendar size={15} />
                   Schedule a Visit
                 </button>
-              </div>
+              </div> */}
 
               {/* Trust note */}
              

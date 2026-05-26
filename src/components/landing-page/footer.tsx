@@ -35,8 +35,8 @@ export function Footer() {
           <div>
             <h6 className="font-semibold text-slate-800 mb-3">Contact</h6>
             <ul className="space-y-3 text-sm text-slate-600">
-              <li className="flex items-center gap-2"><Phone size={16} /> <span>+250 788 123 456</span></li>
-              <li className="flex items-center gap-2"><Mail size={16} /> <span>info@karisimbi.com</span></li>
+              <li className="flex items-center gap-2"><Phone size={16} /> <span>+250 787 861 400</span></li>
+              <li className="flex items-center gap-2"><Mail size={16} /> <span> karisimbirealestate@gmail.com</span></li>
               <li className="flex items-center gap-2"><MapPin size={16} /> <span>Kigali, Rwanda</span></li>
             </ul>
 

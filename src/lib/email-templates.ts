@@ -119,7 +119,7 @@ function wrapper(preheader: string, content: string) {
                   <td align="right">
                     <a href="tel:+250788123456"
                       style="color:${BASE.gold};font-size:12px;text-decoration:none;font-weight:600;">
-                      +250 788 123 456
+                      +250 787 861 400
                     </a>
                     <br/>
 
@@ -281,7 +281,7 @@ Has Issues: ${data.hasIssues ?? "—"}
 ${data.hasIssues === "yes" ? `Details: ${data.issuesExplanation}` : ""}
 
 ---
-Karisimbi Real Estate · info@karisimbirealestate.com · +250 788 123 456
+Karisimbi Real Estate · info@karisimbirealestate.com · +250 787 861 400
   `.trim();
 }
 
@@ -466,6 +466,6 @@ Time:      ${data.visitTime ?? "—"}
 Transport: ${formatTransport(data.transportation) ?? "—"}
 
 ---
-Karisimbi Real Estate · info@karisimbirealestate.com · +250 788 123 456
+Karisimbi Real Estate · info@karisimbirealestate.com · +250 787 861 400
   `.trim();
 }

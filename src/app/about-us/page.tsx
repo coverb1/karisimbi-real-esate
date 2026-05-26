@@ -1,7 +1,7 @@
 import { PageHero } from "@/src/components/pages/page-hero";
 import { AboutStory } from "@/src/components/pages/about/about-story-section";
 import { AboutPrinciples } from "@/src/components/pages/about/about-principles-section";
-import { AboutTeam } from "@/src/components/pages/about/about-team-section";
+// import { AboutTeam } from "@/src/components/pages/about/about-team-section";
 import { AboutWhyUs } from "@/src/components/pages/about/about-whyus-section";
 import { SectionWithAnimation } from "@/src/components/animations/SectionWithAnimation";
 
@@ -31,9 +31,9 @@ export default function AboutPage() {
         <AboutPrinciples />
       </SectionWithAnimation>
 
-      <SectionWithAnimation>
+      {/* <SectionWithAnimation>
         <AboutTeam />
-      </SectionWithAnimation>
+      </SectionWithAnimation> */}
 
       <SectionWithAnimation>
         <AboutWhyUs />

@@ -287,7 +287,7 @@ export function ContactForm() {
                   icon={Phone}
                   label="Phone Number"
                   required
-                  placeholder="+250 788 123 456"
+                  placeholder="+250 787 861 400"
                   value={form.phone}
                   onChange={setPhone}
                   onKeyDown={blockNonDigitKeys}
@@ -407,13 +407,13 @@ export function ContactForm() {
                     Phone
                   </p>
                   <p className="text-[13.5px] font-semibold text-gray-700 group-hover:text-primary transition-colors">
-                    +250 788 123 456
+                    +250 787 861 400
                   </p>
                 </div>
               </a>
 
               <a
-                href="mailto:info@karisimbirealestate.com"
+                href="mailto: karisimbirealestate@gmail.com"
                 className="flex items-start gap-3.5 no-underline group"
               >
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/20">
