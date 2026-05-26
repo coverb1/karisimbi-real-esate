@@ -1,28 +1,41 @@
 "use client";
 
-import { useState } from "react";
+// 📁 File: src/components/properties/Property-filters.tsx
+
+import { useState, useMemo } from "react";
 import { Search, SlidersHorizontal, ChevronDown, X } from "lucide-react";
-import {
-  locationOptions,
-  bedsOptions,
-  priceRanges,
-  type PropertyCategory,
-} from "@/src/lib/mock-data";
+import type { DBProperty } from "./properties-listings";
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+
+const PRICE_RANGES = [
+  { label: "Under 50M",     min: "0",   max: "50"  },
+  { label: "50M – 100M",   min: "50",  max: "100" },
+  { label: "100M – 200M",  min: "100", max: "200" },
+  { label: "200M – 500M",  min: "200", max: "500" },
+  { label: "500M+",         min: "500", max: ""    },
+];
+
+const BEDS_OPTIONS = ["Any", "1", "2", "3", "4", "5+"];
+
+// ─── TYPES ────────────────────────────────────────────────────────────────────
 
 export interface FilterState {
-  categories: Record<PropertyCategory, boolean>;
-  minPrice: string;
-  maxPrice: string;
-  location: string;
-  minBeds: string;
+  types: Record<string, boolean>;  // e.g. { House: true, Land: false }
+  minPrice: string;                // in millions e.g. "50"
+  maxPrice: string;                // in millions e.g. "200"
+  location: string;                // "" means All Locations
+  minBeds: string;                 // "Any" | "1" | "2" ...
   search: string;
 }
 
 interface Props {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
-  counts: Record<PropertyCategory, number>;
+  properties: DBProperty[];        // live data used to build counts + locations
 }
+
+// ─── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
 function Section({
   title,
@@ -117,36 +130,59 @@ function Radio({
       >
         {checked && <div className="h-1.25 w-1.25 rounded-full bg-white" />}
       </div>
-      <span
-        className={`text-[13px] ${checked ? "text-gray-900 font-medium" : "text-gray-500"}`}
-      >
+      <span className={`text-[13px] ${checked ? "text-gray-900 font-medium" : "text-gray-500"}`}>
         {label}
       </span>
     </label>
   );
 }
 
-export function PropertyFilters({ filters, onChange, counts }: Props) {
-  const hasFilters =
-    Object.values(filters.categories).some(Boolean) ||
-    filters.minPrice !== "" ||
-    filters.maxPrice !== "" ||
-    filters.location !== "All Locations" ||
-    filters.minBeds !== "Any" ||
-    filters.search !== "";
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
+export function PropertyFilters({ filters, onChange, properties }: Props) {
   const set = (partial: Partial<FilterState>) =>
     onChange({ ...filters, ...partial });
 
   const clearAll = () =>
     onChange({
-      categories: { house: false, land: false, plot: false },
+      types: {},
       minPrice: "",
       maxPrice: "",
-      location: "All Locations",
+      location: "",
       minBeds: "Any",
       search: "",
     });
+
+  const hasFilters =
+    Object.values(filters.types).some(Boolean) ||
+    filters.minPrice !== "" ||
+    filters.maxPrice !== "" ||
+    filters.location !== "" ||
+    filters.minBeds !== "Any" ||
+    filters.search !== "";
+
+  // Build type counts from live data
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of properties) {
+      if (p.type) counts[p.type] = (counts[p.type] || 0) + 1;
+    }
+    return counts;
+  }, [properties]);
+
+  // Only show types that actually exist in the data
+  const availableTypes = useMemo(
+    () => Object.keys(typeCounts).sort(),
+    [typeCounts],
+  );
+
+  // Build unique locations from live data
+  const locations = useMemo(() => {
+    const unique = Array.from(
+      new Set(properties.map((p) => p.location).filter(Boolean)),
+    );
+    return unique.sort();
+  }, [properties]);
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -154,9 +190,7 @@ export function PropertyFilters({ filters, onChange, counts }: Props) {
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={14} className="text-gray-600" />
-          <span className="text-[13px] font-semibold text-gray-800">
-            Filters
-          </span>
+          <span className="text-[13px] font-semibold text-gray-800">Filters</span>
         </div>
         {hasFilters && (
           <button
@@ -171,10 +205,7 @@ export function PropertyFilters({ filters, onChange, counts }: Props) {
 
       {/* Search */}
       <div className="relative mb-5">
-        <Search
-          size={13}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"
-        />
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
         <input
           value={filters.search}
           onChange={(e) => set({ search: e.target.value })}
@@ -195,36 +226,28 @@ export function PropertyFilters({ filters, onChange, counts }: Props) {
 
       {/* Property Type */}
       <Section title="Property Type">
-        {(
-          [
-            { key: "house" as PropertyCategory, label: "Houses" },
-            { key: "land" as PropertyCategory, label: "Land" },
-            { key: "plot" as PropertyCategory, label: "Plots" },
-          ] as const
-        ).map(({ key, label }) => (
-          <Checkbox
-            key={key}
-            label={label}
-            checked={filters.categories[key]}
-            count={counts[key]}
-            onChange={() =>
-              set({
-                categories: {
-                  ...filters.categories,
-                  [key]: !filters.categories[key],
-                },
-              })
-            }
-          />
-        ))}
+        {availableTypes.length === 0 ? (
+          <p className="text-[12px] text-gray-300">Loading types…</p>
+        ) : (
+          availableTypes.map((type) => (
+            <Checkbox
+              key={type}
+              label={type}
+              checked={!!filters.types[type]}
+              count={typeCounts[type]}
+              onChange={() =>
+                set({ types: { ...filters.types, [type]: !filters.types[type] } })
+              }
+            />
+          ))
+        )}
       </Section>
 
       {/* Price */}
       <Section title="Price (Million RWF)">
         <div className="mb-3 flex flex-col">
-          {priceRanges.map((r) => {
-            const active =
-              filters.minPrice === r.min && filters.maxPrice === r.max;
+          {PRICE_RANGES.map((r) => {
+            const active = filters.minPrice === r.min && filters.maxPrice === r.max;
             return (
               <Radio
                 key={r.label}
@@ -268,7 +291,12 @@ export function PropertyFilters({ filters, onChange, counts }: Props) {
                         [&::-webkit-scrollbar-thumb]:rounded-full
                         [&::-webkit-scrollbar-thumb]:bg-gray-200"
         >
-          {locationOptions.map((loc) => (
+          <Radio
+            label="All Locations"
+            checked={filters.location === ""}
+            onChange={() => set({ location: "" })}
+          />
+          {locations.map((loc) => (
             <Radio
               key={loc}
               label={loc}
@@ -282,7 +310,7 @@ export function PropertyFilters({ filters, onChange, counts }: Props) {
       {/* Bedrooms */}
       <Section title="Bedrooms (min)">
         <div className="flex flex-wrap gap-1.5">
-          {bedsOptions.map((opt) => {
+          {BEDS_OPTIONS.map((opt) => {
             const active = filters.minBeds === opt;
             return (
               <button
