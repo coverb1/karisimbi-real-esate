@@ -625,10 +625,10 @@ export function BookVisitForm() {
             </a>
 
             <a
-              href="mailto:info@karisimbirealestate.com"
+              
               className="flex items-center gap-2.5 text-[12.5px] text-white/60 no-underline hover:text-white/80 transition-colors"
             >
-              <Mail size={14} strokeWidth={2} /> info@karisimbirealestate.com
+              <Mail size={14} strokeWidth={2} />  karisimbirealestate@gmail.com
             </a>
           </div>
         </aside>
