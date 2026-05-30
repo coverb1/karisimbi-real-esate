@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Database } from "@/src/types/database";
-import { getPrimaryPropertyImage } from "@/src/lib/property-images";
+import { getPrimaryPropertyImage, parsePropertyImages } from "@/src/lib/property-images";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +20,8 @@ type EditForm = {
   bathrooms: string;
   area: string;
   status: string;
-  image_url: string;
+  image_urls: string[];
+  video_url: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -155,39 +156,37 @@ function DeleteModal({
 // ─── Image Uploader ───────────────────────────────────────────────────────────
 
 function ImageUploader({
-  currentUrl,
-  onUploaded,
+  imageUrls,
+  onChange,
 }: {
-  currentUrl: string;
-  onUploaded: (url: string) => void;
+  imageUrls: string[];
+  onChange: (urls: string[]) => void;
 }) {
-  const fileInputRef                    = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading]       = useState(false);
-  const [preview, setPreview]           = useState(currentUrl);
-  const [uploadError, setUploadError]   = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceIndexRef = useRef<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
 async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  const files = Array.from(e.target.files ?? []);
+  const replaceIndex = replaceIndexRef.current;
+  replaceIndexRef.current = null;
+  e.target.value = "";
 
-  setPreview(URL.createObjectURL(file));
+  if (files.length === 0) return;
+
   setUploadError(null);
   setUploading(true);
 
   try {
     // Convert to base64 — same way the add property page does it
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
+    const filesToUpload = replaceIndex === null ? files : files.slice(0, 1);
+    const base64Images = await Promise.all(filesToUpload.map(fileToBase64));
     // Call the same Cloudinary route the add property page uses
     const res = await fetch("/api/uploadToCloudinary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ images: [base64] }),
+      body: JSON.stringify({ images: base64Images }),
     });
 
     if (!res.ok) {
@@ -196,37 +195,113 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     }
 
     const data = await res.json();
-    const url = data.mainImageUrl; // matches what /api/uploadToCloudinary returns
-    onUploaded(url);
-    setPreview(url);
+    const uploadedUrls =
+      Array.isArray(data.imageUrls) && data.imageUrls.length > 0
+        ? data.imageUrls
+        : [data.mainImageUrl, ...(Array.isArray(data.subImageUrls) ? data.subImageUrls : [])].filter(Boolean);
+
+    if (uploadedUrls.length === 0) throw new Error("Upload failed");
+
+    if (replaceIndex === null) {
+      onChange([...imageUrls, ...uploadedUrls]);
+    } else {
+      onChange(imageUrls.map((url, index) => (index === replaceIndex ? uploadedUrls[0] : url)));
+    }
   } catch (err: unknown) {
     setUploadError(err instanceof Error ? err.message : "Upload failed");
-    setPreview(currentUrl);
   } finally {
     setUploading(false);
   }
 }
 
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function openAddPicker() {
+  replaceIndexRef.current = null;
+  fileInputRef.current?.click();
+}
+
+function openReplacePicker(index: number) {
+  replaceIndexRef.current = index;
+  fileInputRef.current?.click();
+}
+
+function setCover(index: number) {
+  if (index === 0) return;
+  const next = [...imageUrls];
+  const [selected] = next.splice(index, 1);
+  onChange([selected, ...next]);
+}
+
+function removeImage(index: number) {
+  onChange(imageUrls.filter((_, imageIndex) => imageIndex !== index));
+}
+
   return (
     <div className="sm:col-span-2">
       <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-        Property Image
+        Property Images
       </label>
 
-      {/* Preview box */}
-      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-        {preview ? (
-          <img
-            src={preview}
-            alt="Property preview"
-            className="h-48 w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+        {imageUrls.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {imageUrls.map((url, index) => (
+              <div key={`${url}-${index}`} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <div className="relative h-32 bg-gray-100">
+                  <img
+                    src={url}
+                    alt={`Property image ${index + 1}`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  {index === 0 && (
+                    <span className="absolute left-2 top-2 rounded-md bg-primary px-2 py-1 text-[10px] font-bold uppercase text-white">
+                      Cover
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-1 p-2">
+                  <button
+                    type="button"
+                    onClick={() => setCover(index)}
+                    disabled={index === 0 || uploading}
+                    className="rounded-md border border-gray-200 px-2 py-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Cover
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openReplacePicker(index)}
+                    disabled={uploading}
+                    className="rounded-md border border-gray-200 px-2 py-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    disabled={uploading}
+                    className="rounded-md border border-red-100 px-2 py-1.5 text-[11px] font-semibold text-red-500 hover:bg-red-50 disabled:opacity-40"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           // Empty state when no image exists
-          <div className="flex h-48 flex-col items-center justify-center gap-2 text-gray-300">
+          <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg bg-white text-gray-300">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <circle cx="8.5" cy="8.5" r="1.5" />
@@ -236,13 +311,12 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
           </div>
         )}
 
-        {/* Upload / Change button overlaid bottom-right */}
-        <div className="absolute bottom-3 right-3">
+        <div className="mt-3 flex justify-end">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={openAddPicker}
             disabled={uploading}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-700 shadow-md backdrop-blur-sm hover:bg-white disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-60"
           >
             {uploading ? (
               <>
@@ -254,7 +328,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
             ) : (
               <>
                 <IconUpload />
-                {preview ? "Change Image" : "Upload Image"}
+                Add Photos
               </>
             )}
           </button>
@@ -266,6 +340,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple
         className="hidden"
         onChange={handleFileChange}
       />
@@ -302,7 +377,8 @@ function EditModal({
     bathrooms: String(listing.bathrooms),
     area:      String(listing.area),
     status:    listing.status,
-    image_url: getPrimaryPropertyImage(listing.image_url) ?? "",
+    image_urls: parsePropertyImages(listing.image_url),
+    video_url: listing.video_url ?? "",
   });
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -333,9 +409,9 @@ function EditModal({
 
             {/* Image uploader — no URL input, just click to pick file */}
             <ImageUploader
-              currentUrl={form.image_url}
-              onUploaded={(url) =>
-                setForm((prev) => ({ ...prev, image_url: url }))
+              imageUrls={form.image_urls}
+              onChange={(urls) =>
+                setForm((prev) => ({ ...prev, image_urls: urls }))
               }
             />
 
@@ -437,6 +513,19 @@ function EditModal({
                 onChange={handleChange}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
+            </div>
+
+            {/* Video URL */}
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-xs font-semibold text-gray-700">Video Tour URL</label>
+              <input
+                name="video_url"
+                value={form.video_url}
+                onChange={handleChange}
+                placeholder="https://youtube.com/watch?v=..."
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="mt-1 text-[11px] text-gray-400">YouTube or Vimeo link, optional.</p>
             </div>
 
           </div>
