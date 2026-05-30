@@ -55,11 +55,13 @@ export type Database = {
           location: string;
           type: string;
           price: number;
-          bedrooms: number;
-          bathrooms: number;
+          bedrooms: number | null;   // nullable for Plot of Land
+          bathrooms: number | null;  // nullable for Plot of Land
           area: number;
           image_url: string | null;
           status: string;
+          description: string | null;
+          video_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -69,11 +71,13 @@ export type Database = {
           location: string;
           type: string;
           price: number;
-          bedrooms: number;
-          bathrooms: number;
+          bedrooms?: number | null;  // nullable for Plot of Land
+          bathrooms?: number | null; // nullable for Plot of Land
           area: number;
           image_url?: string | null;
           status?: string;
+          description?: string | null;
+          video_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -83,11 +87,13 @@ export type Database = {
           location?: string;
           type?: string;
           price?: number;
-          bedrooms?: number;
-          bathrooms?: number;
+          bedrooms?: number | null;  // nullable for Plot of Land
+          bathrooms?: number | null; // nullable for Plot of Land
           area?: number;
           image_url?: string | null;
           status?: string;
+          description?: string | null;
+          video_url?: string | null;
           updated_at?: string;
         };
         Relationships: [];

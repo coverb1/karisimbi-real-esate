@@ -1,6 +1,7 @@
 // 📁 app/api/properties/[id]/route.ts
 
 import { getSupabaseServiceRoleClient } from "@/src/lib/supabase-server";
+import { serializePropertyImages } from "@/src/lib/property-images";
 import { NextRequest, NextResponse } from "next/server";
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
@@ -41,6 +42,9 @@ export async function PATCH(
 
   const supabase = getSupabaseServiceRoleClient();
   const body = await req.json();
+  const imageUrl = Array.isArray(body.image_urls)
+    ? serializePropertyImages(body.image_urls)
+    : body.image_url || null;
 
   const { data, error } = await supabase
     .from("properties")
@@ -53,7 +57,8 @@ export async function PATCH(
       bathrooms: Number(body.bathrooms),
       area: Number(body.area),
       status: body.status,
-      image_url: body.image_url || null,
+      image_url: imageUrl,
+      video_url: body.video_url || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -66,3 +71,5 @@ export async function PATCH(
 
   return NextResponse.json({ property: data });
 }
+
+//API for patch and edit

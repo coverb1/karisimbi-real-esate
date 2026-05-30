@@ -14,11 +14,35 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
-  const { title, location, type, price, bedrooms, bathrooms, area, image_url, image_urls, status } = body;
+  const {
+    title,
+    location,
+    type,
+    price,
+    bedrooms,
+    bathrooms,
+    area,
+    image_url,
+    image_urls,
+    status,
+    description,
+    video_url,
+  } = body;
 
-  if (!title || !location || !type || !price || !bedrooms || !bathrooms || !area) {
+  // For "Plot of Land", bedrooms and bathrooms are optional (sent as 0 or omitted).
+  // For all other types they are required.
+  const isPlot = type === "Plot of Land";
+
+  if (!title || !location || !type || !price || !area) {
     return NextResponse.json(
       { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  if (!isPlot && (!bedrooms || !bathrooms)) {
+    return NextResponse.json(
+      { error: "Bedrooms and bathrooms are required for this property type" },
       { status: 400 }
     );
   }
@@ -31,10 +55,15 @@ export async function POST(request: Request) {
     type,
     status: status || "Active",
     price: Number(price),
-    bedrooms: Number(bedrooms),
-    bathrooms: Number(bathrooms),
+    // Store null for plots so the UI knows not to display them
+    bedrooms: isPlot ? null : Number(bedrooms),
+    bathrooms: isPlot ? null : Number(bathrooms),
     area: Number(area),
-    image_url: Array.isArray(image_urls) ? serializePropertyImages(image_urls) : image_url || null,
+    image_url: Array.isArray(image_urls)
+      ? serializePropertyImages(image_urls)
+      : image_url || null,
+    description: description || null,
+    video_url: video_url || null,
   };
 
   const { data, error } = await supabase
