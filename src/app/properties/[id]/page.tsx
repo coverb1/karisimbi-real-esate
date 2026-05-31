@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -98,6 +98,10 @@ export default function PropertyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Touch swipe state
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
   useEffect(() => {
     async function fetchProperty() {
       try {
@@ -164,6 +168,29 @@ export default function PropertyDetailPage() {
   const nextImage = () =>
     setSelectedImageIndex((i) => (i + 1) % propertyImages.length);
 
+  // ── Touch handlers for swipe-to-navigate on mobile ──────────────────────
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    if (propertyImages.length <= 1) return;
+
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only trigger if horizontal swipe is dominant and meaningful (> 40px)
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      if (dx < 0) nextImage();
+      else prevImage();
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAF9]">
 
@@ -188,7 +215,11 @@ export default function PropertyDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 rounded-3xl overflow-hidden">
 
           {/* Main image */}
-          <div className="lg:col-span-3 relative h-[300px] sm:h-[400px] lg:h-[460px] bg-gray-100 group">
+          <div
+            className="lg:col-span-3 relative h-[300px] sm:h-[400px] lg:h-[460px] bg-gray-100 group"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {selectedImage ? (
               <Image src={selectedImage} alt={property.title} fill className="object-cover" />
             ) : (
@@ -227,18 +258,38 @@ export default function PropertyDetailPage() {
               </span>
             </div>
 
-            {/* Arrow nav */}
+            {/* Arrow nav
+                — On mobile (< lg): always visible so users can tap them.
+                — On desktop (lg+): hidden until hover, matching the original behaviour. */}
             {propertyImages.length > 1 && (
               <>
                 <button
                   onClick={prevImage}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  aria-label="Previous image"
+                  className="
+                    absolute left-3 top-1/2 -translate-y-1/2
+                    w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm
+                    flex items-center justify-center text-gray-700 shadow-sm
+                    transition-opacity
+                    opacity-100
+                    lg:opacity-0 lg:group-hover:opacity-100
+                    hover:bg-white
+                  "
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={nextImage}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  aria-label="Next image"
+                  className="
+                    absolute right-3 top-1/2 -translate-y-1/2
+                    w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm
+                    flex items-center justify-center text-gray-700 shadow-sm
+                    transition-opacity
+                    opacity-100
+                    lg:opacity-0 lg:group-hover:opacity-100
+                    hover:bg-white
+                  "
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -247,6 +298,7 @@ export default function PropertyDetailPage() {
                     <button
                       key={i}
                       onClick={() => setSelectedImageIndex(i)}
+                      aria-label={`Go to image ${i + 1}`}
                       className={`rounded-full transition-all ${
                         i === selectedImageIndex
                           ? "w-5 h-1.5 bg-white"
