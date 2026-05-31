@@ -31,7 +31,8 @@ const formSchema = z
     area: z
       .string()
       .min(1, "Area is required")
-      .regex(/^\d+$/, "Area must be a number")
+      // Allow digits optionally followed by a + sign (e.g. "420" or "500+")
+      .regex(/^\d+\+?$/, "Area must be a number, optionally followed by + (e.g. 500+)")
       .refine((v) => parseInt(v) >= 1, "Area must be at least 1 m²"),
     description: z.string().max(2000, "Description must be under 2000 characters").optional(),
     video_url: z
@@ -519,7 +520,7 @@ export default function AddPropertyPage() {
           // null for plots — API will store null in DB
           bedrooms: isPlot ? null : parseInt(values.bedrooms ?? "0", 10),
           bathrooms: isPlot ? null : parseInt(values.bathrooms ?? "0", 10),
-          area: parseInt(values.area, 10),
+          area: parseInt(values.area.replace("+", ""), 10),
           description: values.description || null,
           video_url: values.video_url || null,
           image_url: uploadedImageUrls[0],
@@ -956,9 +957,12 @@ export default function AddPropertyPage() {
                 >
                   <input
                     {...register("area")}
-                    placeholder="e.g. 420"
+                    placeholder="e.g. 420 or 500+"
                     className={inputCls(errors.area?.message)}
                   />
+                  <p className="mt-1 text-[10px] text-gray-300">
+                    Use + if the exact size isn't known (e.g. 500+)
+                  </p>
                 </Field>
               </div>
 
