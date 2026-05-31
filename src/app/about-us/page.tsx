@@ -15,7 +15,7 @@ export default function AboutPage() {
           imagePosition="center 60%"
           eyebrow="About Us"
           title="WHO WE ARE"
-          description="Rwanda's premier property partner — helping families and investors find spaces they truly love since 2010."
+          description="Rwanda's premier property partner — helping families and investors find spaces they truly love since 2018."
           breadcrumb={[
             { label: "Home", href: "/" },
             { label: "About Us" },

@@ -20,8 +20,8 @@ interface FormState {
   fullName: string;
   phone: string;
   email: string;
-  address: string;
-  idNumber: string;
+  // address: string;
+  // idNumber: string;
   propertyType: string;
   propertyLocation: string;
   propertyPrice: string;
@@ -47,14 +47,14 @@ const formSchema = z.object({
     .string()
     .email("Please enter a valid email address"),
 
-  address: z
-    .string()
-    .min(5, "Address must be at least 5 characters"),
+  // address: z
+  //   .string()
+  //   .min(5, "Address must be at least 5 characters"),
 
-  idNumber: z
-    .string()
-    .min(3, "ID / Passport number is required")
-    .regex(/^[0-9A-Za-z\s-]+$/, "ID must contain only letters, numbers, spaces or dashes"),
+  // idNumber: z
+  //   .string()
+  //   .min(3, "ID / Passport number is required")
+  //   .regex(/^[0-9A-Za-z\s-]+$/, "ID must contain only letters, numbers, spaces or dashes"),
 
   propertyType: z.string().min(1, "Please select a property type"),
 
@@ -79,8 +79,8 @@ const defaultForm: FormState = {
   fullName: "",
   phone: "",
   email: "",
-  address: "",
-  idNumber: "",
+  // address: "",
+  // idNumber: "",
   propertyType: "",
   propertyLocation: "",
   propertyPrice: "",
@@ -393,11 +393,11 @@ export function BookVisitForm() {
       label: "Coming with Driver",
       desc: "I have my own transportation arranged",
     },
-    {
-      value: "need-transport",
-      label: "Need Transport",
-      desc: "Please arrange a pickup for me",
-    },
+    // {
+    //   value: "need-transport",
+    //   label: "Need Transport",
+    //   desc: "Please arrange a pickup for me",
+    // },
   ];
 
   return (
@@ -451,15 +451,15 @@ export function BookVisitForm() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <InputField
+                {/* <InputField
                   icon={MapPin}
                   label="Residential Address"
                   required
                   placeholder="KG 15 Ave, Kigali"
                   value={form.address}
                   onChange={set("address")}
-                />
-                <InputField
+                /> */}
+                {/* <InputField
                   icon={User}
                   label="ID / Passport No"
                   required
@@ -474,7 +474,7 @@ export function BookVisitForm() {
                     if (allowed.includes(e.key)) return;
                     if (!/^[0-9A-Za-z]$/.test(e.key)) e.preventDefault();
                   }}
-                />
+                /> */}
               </div>
             </div>
           </div>
