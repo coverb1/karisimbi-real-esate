@@ -57,6 +57,7 @@ export async function PATCH(
       bathrooms: Number(body.bathrooms),
       area: Number(body.area),
       status: body.status,
+      description: body.description || null,
       image_url: imageUrl,
       video_url: body.video_url || null,
       updated_at: new Date().toISOString(),

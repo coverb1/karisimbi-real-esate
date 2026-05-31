@@ -42,25 +42,29 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> =
 // ─── Convert any YouTube / Vimeo URL to an embeddable src ────────────────────
 function getEmbedUrl(url: string): string | null {
   try {
-    const u = new URL(url);
+    const u = new URL(url.trim());
+    const host = u.hostname.replace(/^www\./, "");
+    const pathParts = u.pathname.split("/").filter(Boolean);
 
-    // YouTube: youtube.com/watch?v=ID or youtu.be/ID
-    if (u.hostname.includes("youtube.com")) {
-      const v = u.searchParams.get("v");
-      if (v) return `https://www.youtube.com/embed/${v}`;
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      const videoId =
+        u.searchParams.get("v") ||
+        (["embed", "shorts", "live"].includes(pathParts[0]) ? pathParts[1] : null);
+
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
     }
-    if (u.hostname === "youtu.be") {
-      const id = u.pathname.slice(1);
+
+    if (host === "youtu.be") {
+      const id = pathParts[0];
       if (id) return `https://www.youtube.com/embed/${id}`;
     }
 
-    // Vimeo: vimeo.com/ID
-    if (u.hostname.includes("vimeo.com")) {
-      const id = u.pathname.slice(1);
+    if (host === "vimeo.com") {
+      const id = pathParts.find((part) => /^\d+$/.test(part));
       if (id) return `https://player.vimeo.com/video/${id}`;
     }
   } catch {
-    // invalid URL — ignore
+    // Invalid URL, so the caller can fall back to a normal link.
   }
   return null;
 }
@@ -379,8 +383,8 @@ export default function PropertyDetailPage() {
               </>
             )}
 
-            {/* Video Tour — only shown when present and parseable */}
-            {embedUrl && (
+            {/* Video Tour - shown when a video URL is saved */}
+            {property.video_url && (
               <>
                 <div className="h-px bg-gray-100" />
                 <div>
@@ -389,16 +393,26 @@ export default function PropertyDetailPage() {
                     Video Tour
                   </p>
                   <div className="relative w-full overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
-                    {/* 16:9 aspect ratio wrapper */}
-                    <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                      <iframe
-                        src={embedUrl}
-                        title="Property video tour"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="absolute inset-0 h-full w-full border-0"
-                      />
-                    </div>
+                    {embedUrl ? (
+                      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                        <iframe
+                          src={embedUrl}
+                          title="Property video tour"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="absolute inset-0 h-full w-full border-0"
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={property.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-white p-4 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                      >
+                        Open video tour
+                      </a>
+                    )}
                   </div>
                 </div>
               </>

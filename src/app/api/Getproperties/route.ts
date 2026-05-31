@@ -17,7 +17,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("properties")
-    .select("id, title, location, type, price, status, bedrooms, bathrooms, area, image_url, video_url, created_at")
+    .select("id, title, location, type, price, status, bedrooms, bathrooms, area, image_url, description, video_url, created_at")
     .order("created_at", { ascending: false }); // newest first
 
   if (error) {

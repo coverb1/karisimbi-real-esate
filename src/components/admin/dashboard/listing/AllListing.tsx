@@ -20,6 +20,7 @@ type EditForm = {
   bathrooms: string;
   area: string;
   status: string;
+  description: string;
   image_urls: string[];
   video_url: string;
 };
@@ -30,10 +31,11 @@ const STATUS_STYLES: Record<string, string> = {
   Featured: "bg-amber-50 text-amber-700 border border-amber-200",
   Active:   "bg-emerald-50 text-emerald-700 border border-emerald-200",
   Pending:  "bg-red-50 text-red-600 border border-red-200",
+  sold:     "bg-slate-100 text-slate-700 border border-slate-200",
 };
 
 const PROPERTY_TYPES = ["Apartment", "House", "Villa", "Office", "Land", "Commercial"];
-const STATUSES       = ["Active", "Featured", "Pending"];
+const STATUSES       = ["Active", "Featured", "Pending", "sold"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -377,11 +379,12 @@ function EditModal({
     bathrooms: String(listing.bathrooms),
     area:      String(listing.area),
     status:    listing.status,
+    description: listing.description ?? "",
     image_urls: parsePropertyImages(listing.image_url),
     video_url: listing.video_url ?? "",
   });
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
@@ -515,6 +518,23 @@ function EditModal({
               />
             </div>
 
+            {/* Description */}
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-xs font-semibold text-gray-700">Description</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                rows={5}
+                maxLength={2000}
+                placeholder="Describe the property, amenities, neighborhood, and key selling points."
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="mt-1 text-right text-[11px] text-gray-400">
+                {form.description.length} / 2000
+              </p>
+            </div>
+
             {/* Video URL */}
             <div className="sm:col-span-2">
               <label className="mb-1.5 block text-xs font-semibold text-gray-700">Video Tour URL</label>
@@ -640,7 +660,7 @@ export default function AllListingsPage() {
 
   // ── Filter ──
   const uniqueTypes = ["All", ...Array.from(new Set(listings.map((l) => l.type)))];
-  const statuses    = ["All", "Featured", "Active", "Pending"];
+  const statuses    = ["All", "Featured", "Active", "Pending", "sold"];
 
   const filtered = listings.filter((l) => {
     const q = search.toLowerCase();
