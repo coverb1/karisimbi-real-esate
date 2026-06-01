@@ -2,6 +2,7 @@
 
 import { getSupabaseServiceRoleClient } from "@/src/lib/supabase-server";
 import { serializePropertyImages } from "@/src/lib/property-images";
+import { parseAreaInput } from "@/src/lib/property-area";
 import { NextRequest, NextResponse } from "next/server";
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export async function PATCH(
   const imageUrl = Array.isArray(body.image_urls)
     ? serializePropertyImages(body.image_urls)
     : body.image_url || null;
+  const parsedArea = parseAreaInput(body.area);
 
   const { data, error } = await supabase
     .from("properties")
@@ -55,7 +57,8 @@ export async function PATCH(
       price: Number(body.price),
       bedrooms: Number(body.bedrooms),
       bathrooms: Number(body.bathrooms),
-      area: Number(body.area),
+      area: parsedArea.area,
+      area_has_plus: parsedArea.area_has_plus,
       status: body.status,
       description: body.description || null,
       image_url: imageUrl,

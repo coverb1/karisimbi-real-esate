@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Bed, Bath, Square, ArrowUpRight } from "lucide-react";
 import { getPrimaryPropertyImage } from "@/src/lib/property-images";
+import { formatArea } from "@/src/lib/property-area";
 import type { DBProperty } from "./properties-listings";
 
 // ─── TYPE COLOR MAP ───────────────────────────────────────────────────────────
@@ -31,8 +32,8 @@ export function PropertyCard({ property }: { property: DBProperty }) {
   const formattedPrice = `RWF ${property.price.toLocaleString()}`;
 
   // Format area: DB stores numeric sqm
-  const formattedArea = property.area
-    ? `${property.area.toLocaleString()} m²`
+  const formattedArea = property.area != null
+    ? `${formatArea(property.area, property.area_has_plus)} m²`
     : null;
 
   return (

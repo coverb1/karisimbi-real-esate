@@ -16,6 +16,7 @@ import {
   Play,
 } from "lucide-react";
 import { parsePropertyImages } from "@/src/lib/property-images";
+import { formatArea } from "@/src/lib/property-area";
 
 type Property = {
   id: string;
@@ -27,6 +28,7 @@ type Property = {
   bedrooms: number | null;
   bathrooms: number | null;
   area: number;
+  area_has_plus?: boolean | null;
   image_url: string | null;
   description: string | null;
   video_url: string | null;
@@ -410,7 +412,7 @@ export default function PropertyDetailPage() {
                   </div>
                   <div className="text-center">
                     <p className="landing-card-title text-gray-900">
-                      {property.area.toLocaleString()}
+                      {formatArea(property.area, property.area_has_plus)}
                     </p>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mt-0.5">
                       m² Area

@@ -31,6 +31,7 @@ export type DBProperty = {
   bedrooms: number | null;
   bathrooms: number | null;
   area: number | null;
+  area_has_plus?: boolean | null;
   image_url: string | null;
 };
 
