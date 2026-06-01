@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("properties")
-    .select("id, title, location, type, price, status, bedrooms, bathrooms, area, image_url, created_at")
+    .select("id, title, location, type, price, status, bedrooms, bathrooms, area, area_has_plus, image_url, created_at")
     .order("created_at", { ascending: false });
 
   if (type && type !== "All") {

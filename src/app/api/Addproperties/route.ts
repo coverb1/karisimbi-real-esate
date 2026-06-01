@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     bedrooms,
     bathrooms,
     area,
+    area_has_plus,
     image_url,
     image_urls,
     status,
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     bedrooms: isPlot ? null : Number(bedrooms),
     bathrooms: isPlot ? null : Number(bathrooms),
     area: Number(area),
+    area_has_plus: Boolean(area_has_plus),
     image_url: Array.isArray(image_urls)
       ? serializePropertyImages(image_urls)
       : image_url || null,

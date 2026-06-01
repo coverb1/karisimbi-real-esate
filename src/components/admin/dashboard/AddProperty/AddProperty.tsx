@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { parseAreaInput } from "@/src/lib/property-area";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const formSchema = z
@@ -507,6 +508,7 @@ export default function AddPropertyPage() {
       toast.update(toastId, { render: "Saving property…", type: "default", isLoading: true });
 
       const values = getValues();
+      const parsedArea = parseAreaInput(values.area);
 
       const saveRes = await fetch("/api/Addproperties", {
         method: "POST",
@@ -520,7 +522,8 @@ export default function AddPropertyPage() {
           // null for plots — API will store null in DB
           bedrooms: isPlot ? null : parseInt(values.bedrooms ?? "0", 10),
           bathrooms: isPlot ? null : parseInt(values.bathrooms ?? "0", 10),
-          area: parseInt(values.area.replace("+", ""), 10),
+          area: parsedArea.area,
+          area_has_plus: parsedArea.area_has_plus,
           description: values.description || null,
           video_url: values.video_url || null,
           image_url: uploadedImageUrls[0],

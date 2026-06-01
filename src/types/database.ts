@@ -58,6 +58,7 @@ export type Database = {
           bedrooms: number | null;   // nullable for Plot of Land
           bathrooms: number | null;  // nullable for Plot of Land
           area: number;
+          area_has_plus: boolean;
           image_url: string | null;
           status: string;
           description: string | null;
@@ -74,6 +75,7 @@ export type Database = {
           bedrooms?: number | null;  // nullable for Plot of Land
           bathrooms?: number | null; // nullable for Plot of Land
           area: number;
+          area_has_plus?: boolean;
           image_url?: string | null;
           status?: string;
           description?: string | null;
@@ -90,6 +92,7 @@ export type Database = {
           bedrooms?: number | null;  // nullable for Plot of Land
           bathrooms?: number | null; // nullable for Plot of Land
           area?: number;
+          area_has_plus?: boolean;
           image_url?: string | null;
           status?: string;
           description?: string | null;

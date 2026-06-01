@@ -26,6 +26,7 @@ type Property = {
   bedrooms: number;
   bathrooms: number;
   area: number;
+  area_has_plus?: boolean | null;
   image_url: string | null;
   created_at: string;
 };

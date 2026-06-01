@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Database } from "@/src/types/database";
 import { getPrimaryPropertyImage, parsePropertyImages } from "@/src/lib/property-images";
+import { formatArea } from "@/src/lib/property-area";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ type EditForm = {
   bedrooms: string;
   bathrooms: string;
   area: string;
+  area_has_plus?: boolean;
   status: string;
   description: string;
   image_urls: string[];
@@ -377,7 +379,7 @@ function EditModal({
     price:     String(listing.price),
     bedrooms:  String(listing.bedrooms),
     bathrooms: String(listing.bathrooms),
-    area:      String(listing.area),
+    area:      `${listing.area}${listing.area_has_plus ? "+" : ""}`,
     status:    listing.status,
     description: listing.description ?? "",
     image_urls: parsePropertyImages(listing.image_url),
@@ -486,10 +488,12 @@ function EditModal({
               <label className="mb-1.5 block text-xs font-semibold text-gray-700">Area (m²)</label>
               <input
                 name="area"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]+\\+?"
                 value={form.area}
                 onChange={handleChange}
-                placeholder="420"
+                placeholder="420+"
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
@@ -833,7 +837,7 @@ export default function AllListingsPage() {
 
                     <td className="px-4 py-3 text-center text-gray-600">{l.bedrooms}</td>
                     <td className="px-4 py-3 text-center text-gray-600">{l.bathrooms}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">{l.area} m²</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">{formatArea(l.area, l.area_has_plus)} m²</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-400">{formatDate(l.created_at)}</td>
 
                     {/* Actions */}

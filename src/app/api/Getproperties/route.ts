@@ -17,7 +17,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("properties")
-    .select("id, title, location, type, price, status, bedrooms, bathrooms, area, image_url, description, video_url, created_at")
+    .select("id, title, location, type, price, status, bedrooms, bathrooms, area, area_has_plus, image_url, description, video_url, created_at")
     .order("created_at", { ascending: false }); // newest first
 
   if (error) {
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { title, location, type, price, bedrooms, bathrooms, area, image_url, image_urls, status } = body;
+  const { title, location, type, price, bedrooms, bathrooms, area, area_has_plus, image_url, image_urls, status } = body;
 
   if (!title || !location || !type || !price || !bedrooms || !bathrooms || !area) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     bedrooms: Number(bedrooms),
     bathrooms: Number(bathrooms),
     area: Number(area),
+    area_has_plus: Boolean(area_has_plus),
     image_url: Array.isArray(image_urls) ? serializePropertyImages(image_urls) : image_url || null,
   };
 
